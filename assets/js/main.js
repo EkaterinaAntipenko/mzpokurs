@@ -21,6 +21,10 @@
     get: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
     set: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* private mode */ } }
   };
+  // Ховер в CSS только для устройств с курсором (@media (hover: hover)) — на телефоне он
+  // «залипал», если кнопку зажали и отпустили без нажатия. Отклик на касание даёт :active,
+  // а iOS Safari включает :active, только когда на странице слушают касания.
+  document.addEventListener('touchstart', function () {}, { passive: true });
 
   /* ---------- Promo bar (закрытие запоминается) ---------- */
   var promo = $('[data-promo]');
@@ -95,13 +99,16 @@
     el.classList.add('is-open');
     el.removeAttribute('aria-hidden');
     document.body.classList.add('is-locked');
-    var focusable = $('input:not([type=checkbox])', el) || $('button, a, input, select', el);
+    // окно фильтров: фокус на «Закрыть», а не в поле цены — иначе на телефоне сразу выскакивает клавиатура
+    var focusable = el.hasAttribute('data-no-autofocus') ? $('button[data-close]', el)
+      : ($('input:not([type=checkbox])', el) || $('button, a, input, select', el));
     if (focusable) setTimeout(function () { focusable.focus(); }, 50);
   }
   function closeLayer(el) {
     if (!el) return;
     el.classList.remove('is-open');
-    el.setAttribute('aria-hidden', 'true');
+    // колонка фильтров на компьютере остаётся на экране — от скринридеров её не прячем
+    if (!(el.classList.contains('catalog__filters') && window.matchMedia('(min-width: 1200px)').matches)) el.setAttribute('aria-hidden', 'true');
     if (!$('.drawer.is-open, .modal.is-open, .catalog__filters.is-open')) document.body.classList.remove('is-locked');
     if (lastFocus) lastFocus.focus();
   }
@@ -119,6 +126,16 @@
     });
   });
   function closeOpenLayers() { $$('.drawer.is-open, .modal.is-open, .catalog__filters.is-open').forEach(closeLayer); }
+
+  /* ---------- Меню на телефоне: «Каталог курсов» и «Расписание» раскрываются ---------- */
+  $$('.drawer__toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var group = btn.closest('.drawer__group');
+      var open = !group.classList.contains('is-open');
+      group.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeOpenLayers(); });
 
   /* ---------- Поиск из шапки (окно #modal-search): карточки курсов прямо во время ввода ---------- */
@@ -160,7 +177,7 @@
       if (window.MZPO_COURSES) { prepare(window.MZPO_COURSES); return; }
       loading = true;
       var s = document.createElement('script');
-      s.src = 'assets/js/search-index.js';
+      s.src = modal.getAttribute('data-search-index') || 'assets/js/search-index.js';
       s.onload = function () { loading = false; prepare(window.MZPO_COURSES || []); render(); };
       s.onerror = function () { loading = false; courses = []; render(); };
       document.head.appendChild(s);
@@ -608,18 +625,76 @@
     });
   });
 
-  /* ---------- Карта: iframe грузим только по клику (скорость загрузки) ---------- */
-  $$('[data-map-load]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var box = btn.closest('.map-block__map');
-      var iframe = document.createElement('iframe');
-      iframe.src = btn.getAttribute('data-map-load');
-      iframe.title = 'Карта: МЦПО, Кузнецкий Мост, 21/5';
-      iframe.loading = 'lazy';
-      box.appendChild(iframe);
-      btn.remove();
+  /* ---------- «Где нас найти»: адрес → карта этого корпуса ---------- */
+  // Интерактивная карта грузится только по действию посетителя (скорость загрузки):
+  // по кнопке «Открыть интерактивную карту» — для выбранного адреса — или по нажатию
+  // на адрес. На телефоне карта стоит под списком, поэтому после выбора прокручиваем к ней.
+  $$('.map-block').forEach(function (block) {
+    var box = $('.map-block__map', block);
+    var btns = $$('[data-location]', block);
+    var loadBtn = $('[data-map-load]', block);
+    if (!box || !btns.length) return;
+    function show(b) {
+      var iframe = $('iframe', box);
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        box.insertBefore(iframe, box.firstChild);   // до плашек с телефоном и графиком — они остаются сверху
+        var pic = $('img', box);
+        if (pic) pic.remove();
+        if (loadBtn) loadBtn.remove();
+      }
+      if (iframe.getAttribute('src') !== b.getAttribute('data-map')) iframe.src = b.getAttribute('data-map');
+      iframe.title = b.getAttribute('data-map-title') || 'Карта';
+    }
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        btns.forEach(function (x) { x.classList.toggle('is-active', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        show(b);
+        // прокручиваем, только если карту закрывает шапка или она за краем экрана (телефон)
+        var r = box.getBoundingClientRect();
+        var covered = siteTop ? Math.max(0, siteTop.getBoundingClientRect().bottom) : 0;
+        if (r.top < covered || r.bottom > window.innerHeight) scrollToTarget(box);
+      });
+    });
+    if (loadBtn) loadBtn.addEventListener('click', function () {
+      show(btns.filter(function (x) { return x.classList.contains('is-active'); })[0] || btns[0]);
     });
   });
+
+  /* ---------- «Как МЦПО помогает…» на телефоне: вертикальный слайдер ---------- */
+  // Карточка у середины экрана в полный размер, остальные уменьшены и приглушены;
+  // при прокрутке фокус плавно переходит на следующую. Страница мягко прилипает
+  // к карточкам (scroll-snap proximity в CSS), поэтому листается по одной.
+  (function () {
+    var list = $('[data-focus-list]');
+    if (!list || reduceMotion) return;
+    var cards = Array.prototype.slice.call(list.children);
+    var mq = window.matchMedia('(max-width: 767px)');
+    var queued = false;
+    function paint() {
+      queued = false;
+      if (!mq.matches) return;
+      var top = topHeight(), h = window.innerHeight - top;
+      var focus = top + h / 2;
+      cards.forEach(function (c) {
+        var r = c.getBoundingClientRect();
+        var d = Math.min(1, Math.abs(r.top + r.height / 2 - focus) / (h * 0.7));
+        c.style.transform = 'scale(' + (1 - 0.1 * d).toFixed(3) + ')';
+        c.style.opacity = (1 - 0.5 * d).toFixed(3);
+      });
+    }
+    function request() { if (!queued) { queued = true; requestAnimationFrame(paint); } }
+    function setup() {
+      list.classList.toggle('is-focus', mq.matches);
+      doc.classList.toggle('has-focus-snap', mq.matches);
+      if (mq.matches) paint();
+      else cards.forEach(function (c) { c.style.transform = ''; c.style.opacity = ''; });
+    }
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request);
+    if (mq.addEventListener) mq.addEventListener('change', setup); else mq.addListener(setup);
+    setup();
+  })();
 
   /* ---------- Корзина: удаление + пересчёт ---------- */
   function recalcCart() {
@@ -641,11 +716,33 @@
   /* ---------- Фильтры каталога: счётчик выбранных ---------- */
   var filters = $('.catalog__filters');
   if (filters) {
-    var badge = $('[data-filter-count]');
-    var countChecked = function () { if (badge) badge.textContent = $$('input[type=checkbox]:checked', filters).length; };
+    var badges = $$('[data-filter-count]');   // в кнопке «Фильтры (2)» и на значке фильтров (телефон)
+    var filterIcon = $('.filter-btn');
+    var countChecked = function () {
+      var k = $$('input[type=checkbox]:checked', filters).length;
+      // при нуле счётчик не показываем: на значке нет кружка, у кнопки — «Фильтры» без «(0)»
+      badges.forEach(function (b) { b.textContent = k; (b.closest('[data-filter-count-wrap]') || b).hidden = k === 0; });
+      if (filterIcon) filterIcon.setAttribute('aria-label', 'Фильтры, выбрано ' + k);
+    };
     filters.addEventListener('change', countChecked);
     countChecked();
   }
+
+  /* ---------- Каталог на телефоне: список направлений вместо ряда вкладок ---------- */
+  $$('[data-dir-select]').forEach(function (sel) {
+    var value = $('[data-dir-value]', sel.parentNode);
+    var tabs = $$('.catalog__tabs [role="tab"]');
+    var title = $('.catalog__bar h2');
+    function show(text) { if (value) value.textContent = text; if (title) title.textContent = text; }
+    sel.addEventListener('change', function () {
+      show(sel.value);
+      if (tabs[sel.selectedIndex]) tabs[sel.selectedIndex].click();
+    });
+    // и наоборот: вкладка на планшете/компьютере меняет выбранное в списке
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { sel.selectedIndex = i; show(sel.value); });
+    });
+  });
 
   /* ---------- Sticky CTA на мобильном (после первого экрана) ---------- */
   var sticky = $('.sticky-cta');
@@ -805,16 +902,6 @@
       var group = d.closest('[data-accordion]');
       if (willOpen && group) $$('details[open]', group).forEach(function (o) { if (o !== d) animateDetails(o, false); });
       animateDetails(d, willOpen);
-    });
-  });
-
-  /* ---------- «Где нас найти»: выбор адреса ---------- */
-  $$('[data-locations]').forEach(function (list) {
-    var btns = $$('[data-location]', list);
-    btns.forEach(function (b) {
-      b.addEventListener('click', function () {
-        btns.forEach(function (x) { x.classList.toggle('is-active', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-      });
     });
   });
 

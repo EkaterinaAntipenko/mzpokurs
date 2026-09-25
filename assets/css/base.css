@@ -74,7 +74,7 @@ address { font-style: normal; }
   text-decoration-thickness: 1px;
   transition: color var(--dur-fast);
 }
-.link:hover { color: var(--color-text-primary); }
+@media (hover: hover) { .link:hover { color: var(--color-text-primary); } }
 
 /* ---------- Layout ---------- */
 .container {
@@ -172,7 +172,9 @@ address { font-style: normal; }
 @keyframes page-in  { from { opacity: 0; transform: translateY(8px); } }
 
 /* Fallback-переход для браузеров без View Transitions */
-.page-fade { animation: page-in 0.35s var(--ease-out) both; }
+/* backwards, а не both: с заполнением после конца анимации main оставался «трансформированным»,
+   и окна с position: fixed внутри (фильтры каталога) вставали от main, а не от экрана */
+.page-fade { animation: page-in 0.35s var(--ease-out) backwards; }
 body.is-leaving .page-fade { opacity: 0; transition: opacity 0.2s ease; }
 
 @media (prefers-reduced-motion: reduce) {

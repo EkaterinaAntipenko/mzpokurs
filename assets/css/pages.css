@@ -27,12 +27,21 @@
 .hero-in > *:nth-child(2) { animation-delay: .08s; } .hero-in > *:nth-child(3) { animation-delay: .16s; }
 @keyframes rise { from { opacity: 0; transform: translateY(20px); } }
 @media (max-width: 1199px) { .hero { grid-template-columns: 1fr; min-height: 0; } .hero__main { min-height: 520px; } .hero__tiles .cat-tile { min-height: 220px; } }
-@media (max-width: 767px) { .hero__main::before { background: linear-gradient(180deg, rgba(28,38,59,.1) 0%, rgba(28,38,59,.55) 35%, rgba(28,38,59,.92) 75%); } .hero__main { min-height: 440px; padding: 20px; gap: 16px; } .hero__actions .btn { width: 100%; } .hero__actions .btn--white { display: none; } .hero__tiles { gap: 12px; } .hero__tiles .cat-tile { min-height: 165px; } }
+@media (max-width: 767px) { .hero__main::before { background: linear-gradient(180deg, rgba(28,38,59,.1) 0%, rgba(28,38,59,.55) 35%, rgba(28,38,59,.92) 75%); } .hero__main { min-height: 440px; padding: 20px 16px; gap: 16px; } .hero__actions .btn { width: 100%; } .hero__actions .btn--white { display: none; } .hero__tiles { gap: 12px; } .hero__tiles .cat-tile { min-height: 165px; } }
+/* Телефон: заголовок на пиксель мельче и на всю ширину слайдера (поля 16 px, как у страницы),
+   ползунок слева, «Подробнее» справа от него в одну строку */
+@media (max-width: 767px) {
+  .hero-slider__text h1, .hero-slider__text .t-h1 { font-size: calc(var(--font-h1) - 1px); line-height: calc(var(--line-h1) - 1px); }
+  .hero-slider__bar { flex-wrap: nowrap; }
+  .hero-progress { order: -1; }
+  .hero-progress__seg.is-active { width: 96px; }
+  .hero-slider__more { min-height: var(--layout-btn-h-m); padding: 10px 18px; font-size: var(--font-button-m); line-height: var(--line-button-m); }
+}
 
 /* ---------- Why MCPO ---------- */
 .why { display: flex; flex-direction: column; align-items: center; gap: 40px; padding: 60px; border-radius: var(--radius-lg); background: var(--color-bg-surface); text-align: center; }
 .why__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 480px)); gap: 48px 120px; justify-content: center; text-align: left; }
-@media (max-width: 767px) { .why { padding: 28px 20px; align-items: stretch; text-align: left; gap: 24px; } .why__stats { grid-template-columns: 1fr 1fr; gap: 20px 12px; } }
+@media (max-width: 767px) { .why { padding: 28px 20px; align-items: stretch; text-align: left; gap: 24px; } .why__stats { grid-template-columns: 1fr 1fr; gap: 20px 12px; text-align: center; } }
 
 /* ---------- Bento ---------- */
 /* Раскладка 1:1 с макетом: «диплом» и «преподаватели» — высокие карточки по краям,
@@ -68,6 +77,13 @@
     grid-template-columns: 1fr;
     grid-template-areas: "diploma" "loyalty" "teachers" "access" "format" "approach";
   }
+  /* Вертикальный слайдер (main.js, [data-focus-list]): карточка у середины экрана
+     в полный размер, соседние уменьшены и приглушены. Страница мягко прилипает
+     к карточкам — листаются по одной. Появление при прокрутке здесь не нужно. */
+  html.has-focus-snap { scroll-snap-type: y proximity; }
+  /* первая карточка («Удостоверение в ФИС ФРДО») — вертикальное фото 4:5 (<picture> в build.py) */
+  .feature__media--tall-m { aspect-ratio: 4 / 5; }
+  .bento.is-focus > .feature { scroll-snap-align: center; transform-origin: 50% 50%; transition: transform .2s linear, opacity .2s linear; transition-delay: 0s; will-change: transform, opacity; }
 }
 
 /* ---------- Documents ---------- */
@@ -77,7 +93,7 @@
 .docs__imgs--single { grid-template-columns: 1fr; justify-items: center; }
 .docs__imgs--single img { width: auto; max-width: 100%; max-height: 340px; box-shadow: none; }
 @media (max-width: 1199px) { .docs { grid-template-columns: 1fr; padding: 40px; } }
-@media (max-width: 767px) { .docs { padding: 28px 20px; gap: 20px; } .docs__imgs { gap: 8px; } .docs__imgs img { height: 150px; } }
+@media (max-width: 767px) { .docs { padding: 28px 20px; gap: 20px; } .docs__imgs { gap: 8px; } .docs__imgs img { height: 150px; } .docs__more { display: none; } }
 /* «Документы после курса»: небольшой диплом справа */
 .docs--course { grid-template-columns: 1fr auto; }
 .docs__diploma { display: grid; place-items: center; }
@@ -117,13 +133,44 @@
 .catalog__bar h2 { min-width: 0; }
 .catalog__results { display: flex; flex-direction: column; gap: 20px; }
 .catalog__filter-btn { display: none; }
+/* Фильтры (catalog_filters в build.py): на компьютере — колонка слева */
+.catalog__filters-overlay { display: none; }
+.catalog__filters-panel { display: flex; flex-direction: column; gap: 16px; }
 @media (max-width: 1199px) {
   .catalog { grid-template-columns: 1fr; }
-  .catalog__filters { position: fixed; inset: 0 0 0 auto; z-index: 120; width: min(360px, 100%); padding: 20px 16px; overflow-y: auto; background: var(--color-bg-page); transform: translateX(100%); transition: transform var(--dur-base) var(--ease-out); box-shadow: var(--shadow-hover); }
-  .catalog__filters.is-open { transform: none; }
+  /* Планшет и телефон: фильтры — модальное окно. Закрытое скрыто через visibility и стоит
+     внутри экрана: прежняя выезжающая панель лежала за правым краем и растягивала
+     страницу на телефоне до 735 px — браузер показывал её уменьшенной. */
+  .catalog__filters { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; visibility: hidden; transition: visibility 0s linear var(--dur-base); }
+  .catalog__filters.is-open { visibility: visible; transition-delay: 0s; }
+  .catalog__filters-overlay { display: block; position: absolute; inset: 0; background: rgba(28, 38, 59, .72); opacity: 0; transition: opacity var(--dur-base); }
+  .catalog__filters.is-open .catalog__filters-overlay { opacity: 1; }
+  .catalog__filters-panel { position: relative; width: min(480px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 24px 20px 0; border-radius: var(--radius-lg); background: var(--color-bg-page); opacity: 0; transform: translateY(16px) scale(.97); transition: opacity var(--dur-base), transform var(--dur-base) var(--ease-out); }
+  .catalog__filters.is-open .catalog__filters-panel { opacity: 1; transform: none; }
+  /* кнопка «Показать курсы» всегда видна внизу окна */
+  .filters-foot { position: sticky; bottom: 0; margin-top: auto; padding: 12px 0 20px; background: var(--color-bg-page); }
+  .filters-foot .btn { width: 100%; }
   .catalog__filter-btn { display: inline-flex; }
 }
-@media (max-width: 767px) { .catalog__bar { padding: 0; background: none; } .catalog__bar h2 { display: none; } }
+@media (max-width: 767px) {
+  .catalog__bar { padding: 0; background: none; } .catalog__bar h2 { display: none; }
+  /* Телефон: окно фильтров во весь экран; над курсами — выбор направления и значок фильтров
+     вместо ряда вкладок и кнопки «Фильтры (2)» */
+  .catalog__filters { padding: 0; place-items: stretch; }
+  .catalog__filters-panel { width: 100%; height: 100%; max-height: none; border-radius: 0; padding: 16px 16px 0; }
+  .catalog__tabs, .catalog__filter-btn { display: none; }
+}
+.catalog__mobile-bar { display: none; }
+@media (max-width: 767px) { .catalog__mobile-bar { display: flex; align-items: center; gap: 8px; } }
+.dir-select { position: relative; flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cap icon" "val icon"; align-items: center; column-gap: 8px; min-height: 56px; padding: 7px 20px; border-radius: var(--radius-full); background: var(--color-bg-surface); }
+.dir-select:focus-within { box-shadow: var(--focus-ring); }
+.dir-select__caption { grid-area: cap; font-size: var(--font-caption); line-height: var(--line-caption); color: var(--color-text-muted); }
+.dir-select__value { grid-area: val; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--font-body-s); line-height: var(--line-body-s); font-weight: var(--fw-medium); }
+.dir-select__icon { grid-area: icon; }
+/* нативный список поверх: на телефоне открывается системный выбор; 16 px — чтобы iOS не увеличивал страницу */
+.dir-select__native { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+.filter-btn { position: relative; }
+.filter-btn__count { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--color-bg-inverse); color: var(--color-text-inverse); font-size: 12px; line-height: 20px; text-align: center; }
 /* Колонки каталога считаем с оглядкой на сайдбар: он забирает 320 px, и до
    1500 px три карточки сжимаются до 220–305 px — кнопка со ссылкой в подвале
    карточки перестают помещаться в строку. */
@@ -215,7 +262,7 @@
 .sched-layout { display: grid; grid-template-columns: 400px 1fr; gap: 30px; align-items: start; }
 .course-list { position: sticky; top: 180px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 8px; }
 .course-list a { padding: 18px 24px; border-radius: 16px; background: var(--color-bg-surface); transition: background-color var(--dur-fast), color var(--dur-fast); }
-.course-list a:hover { background: var(--color-bg-surface-alt); }
+@media (hover: hover) { .course-list a:hover { background: var(--color-bg-surface-alt); } }
 .course-list a[aria-current] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
 .sched-course { display: flex; flex-direction: column; gap: 20px; padding: 36px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .sched-course__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
@@ -251,7 +298,7 @@
 .checkout .summary .t-h2 { font-size: var(--font-h3); line-height: var(--line-h3); }
 .format-options { display: flex; flex-direction: column; gap: 12px; max-width: 580px; }
 .format-option { display: flex; align-items: center; gap: 16px; padding: 14px 22px; border-radius: 16px; background: var(--color-bg-page); border: 2px solid transparent; cursor: pointer; transition: border-color var(--dur-fast); }
-.format-option:hover { border-color: var(--color-border-default); }
+@media (hover: hover) { .format-option:hover { border-color: var(--color-border-default); } }
 .format-option input { accent-color: var(--p-teal-700); width: 20px; height: 20px; }
 .format-option:has(input:checked) { border-color: var(--color-border-accent); }
 .format-option__name { flex: 1; font-size: var(--font-h4); font-weight: var(--fw-bold); }
@@ -376,7 +423,7 @@
    с того же кадра, поэтому склейки не видно. Под курсором останавливается */
 .gallery-band { --gallery-gap: 12px; --gallery-time: 45s; overflow: hidden; margin-inline: calc(50% - 50vw); }
 .gallery-track { display: flex; width: max-content; animation: gallery-run var(--gallery-time) linear infinite; }
-.gallery-band:hover .gallery-track { animation-play-state: paused; }
+@media (hover: hover) { .gallery-band:hover .gallery-track { animation-play-state: paused; } }
 @keyframes gallery-run { from { transform: translateX(calc(-100% / 3)); } to { transform: none; } }
 .no-js .gallery-track { animation: none; }
 /* без анимации ленту можно пролистать вручную */
@@ -511,7 +558,7 @@
 .jobs-learn__text { font-size: var(--font-body-m); line-height: var(--line-body-m); color: var(--color-text-secondary); }
 /* Фирменный значок RuStore из кита (App Badge / RuStore, Dark) */
 .store-badge-img { display: inline-block; border-radius: 6px; transition: transform var(--dur-fast) var(--ease-out); }
-.store-badge-img:hover { transform: translateY(-2px); }
+@media (hover: hover) { .store-badge-img:hover { transform: translateY(-2px); } }
 .store-badge-img img { width: 172px; height: 61px; }
 .jobs-learn__phone { align-self: stretch; display: flex; justify-content: flex-end; }
 .jobs-learn__phone img { width: min(520px, 100%); height: auto; }
@@ -520,8 +567,8 @@
 .video-card { position: relative; display: grid; place-items: center; width: 100%; border-radius: var(--radius-md); overflow: hidden; isolation: isolate; cursor: pointer; }
 .video-card > img { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease-out); }
 .video-card .play { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-page); transition: transform var(--dur-base) var(--ease-out); }
-.video-card:hover > img { transform: scale(1.04); }
-.video-card:hover .play { transform: scale(1.1); }
+@media (hover: hover) { .video-card:hover > img { transform: scale(1.04); } }
+@media (hover: hover) { .video-card:hover .play { transform: scale(1.1); } }
 .video-card--platform { aspect-ratio: 726 / 343; }
 .video-card--platform .play { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
 .jobs-videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }

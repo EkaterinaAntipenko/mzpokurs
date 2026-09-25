@@ -30,11 +30,11 @@
 /* Ховер: фон уходит в accent-strong, текст становится белым, сверху пробегает
    блик. Без свечения и без подъёма — кнопка остаётся на месте. Шаг
    accent → accent-hover давал всего 11% и был незаметен. */
-.btn:hover { background: var(--btn-bg-hover); color: var(--btn-fg-hover); }
+@media (hover: hover) { .btn:hover { background: var(--btn-bg-hover); color: var(--btn-fg-hover); } }
 .btn:active { transform: scale(0.98); }
 .btn[disabled], .btn.is-disabled { opacity: 0.45; pointer-events: none; }
 .btn .icon { width: 20px; height: 20px; transition: transform var(--dur-fast) var(--ease-out); }
-.btn:hover .icon { transform: translate(2px, -2px); }
+@media (hover: hover) { .btn:hover .icon { transform: translate(2px, -2px); } }
 .btn--m { min-height: var(--layout-btn-h-m); padding: 10px 22px; font-size: var(--font-button-m); line-height: var(--line-button-m); }
 .btn--block { width: 100%; }
 /* На наведение кнопка отвечает двумя вещами: пробегает блик и фон становится
@@ -44,7 +44,7 @@
   background: linear-gradient(110deg, transparent 32%, rgba(255,255,255,.28) 50%, transparent 68%);
   transform: translateX(-120%);
 }
-.btn--primary:hover::after { transform: translateX(120%); transition: transform 0.7s var(--ease-out); }
+@media (hover: hover) { .btn--primary:hover::after { transform: translateX(120%); transition: transform 0.7s var(--ease-out); } }
 .btn--outline { --btn-bg: transparent; --btn-bg-hover: var(--color-bg-inverse); --btn-fg: var(--color-text-primary); --btn-fg-hover: var(--color-text-inverse); --btn-border: var(--color-border-strong); }
 .btn--white { --btn-bg: var(--color-bg-page); --btn-bg-hover: var(--color-bg-surface-alt); --btn-fg: var(--color-text-primary); --btn-fg-hover: var(--color-text-primary); }
 .btn--outline-inverse { --btn-bg: transparent; --btn-bg-hover: var(--color-bg-page); --btn-fg: var(--color-text-inverse); --btn-fg-hover: var(--color-text-primary); --btn-border: var(--color-border-inverse); }
@@ -57,13 +57,13 @@
   background: var(--color-bg-surface-alt); color: var(--color-text-primary);
   transition: background-color var(--dur-fast), transform var(--dur-fast) var(--ease-out), color var(--dur-fast);
 }
-.icon-btn:hover { background: var(--color-bg-accent); transform: rotate(-8deg); }
+@media (hover: hover) { .icon-btn:hover { background: var(--color-bg-accent); transform: rotate(-8deg); } }
 .icon-btn--sm { width: 40px; height: 40px; }
 .icon-btn--xs { width: 36px; height: 36px; }
 .icon-btn--white { background: var(--color-bg-page); color: var(--color-text-primary); }
 .icon-btn--accent { background: var(--color-bg-accent); }
 .icon-btn--dark { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
-.icon-btn--dark:hover { background: var(--color-bg-inverse-soft); }
+@media (hover: hover) { .icon-btn--dark:hover { background: var(--color-bg-inverse-soft); } }
 
 /* ---------- Badge ---------- */
 .badge {
@@ -103,7 +103,7 @@
   transition: background-color var(--dur-fast), color var(--dur-fast);
 }
 .tab--l { padding: 12px 18px; font-size: var(--font-body-m); line-height: var(--line-body-m); background: var(--color-bg-surface); }
-.tab:hover { background: var(--color-bg-surface-alt); }
+@media (hover: hover) { .tab:hover { background: var(--color-bg-surface-alt); } }
 .tab.is-active, .tab[aria-selected="true"] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
 .tab--on-white { background: var(--color-bg-page); }
 
@@ -164,7 +164,7 @@
 .breadcrumbs li { display: flex; align-items: center; gap: 8px; }
 .breadcrumbs li + li::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; transform: rotate(45deg); }
 .breadcrumbs a { transition: color var(--dur-fast); }
-.breadcrumbs a:hover { color: var(--color-text-accent); }
+@media (hover: hover) { .breadcrumbs a:hover { color: var(--color-text-accent); } }
 .breadcrumbs [aria-current] { color: var(--color-text-primary); }
 
 /* ---------- Logo ---------- */
@@ -191,9 +191,9 @@
 .promo__inner { position: relative; display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 56px; padding: 8px 64px; }
 .promo__text { font-size: var(--font-promo); line-height: var(--line-promo); font-weight: var(--fw-bold); text-align: center; }
 .promo__cta { flex: none; padding: 6px 16px; border-radius: var(--radius-full); background: var(--color-bg-page); color: var(--color-text-primary); font-size: var(--font-button-m); font-weight: var(--fw-semibold); transition: transform var(--dur-fast) var(--ease-out); }
-.promo__cta:hover { transform: translateY(-1px) scale(1.03); }
+@media (hover: hover) { .promo__cta:hover { transform: translateY(-1px) scale(1.03); } }
 .promo__close { position: absolute; right: 0; top: 50%; transform: translateY(-50%); transition: background-color var(--dur-fast), color var(--dur-fast); }
-.promo__close.icon-btn:hover { transform: translateY(-50%); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+@media (hover: hover) { .promo__close.icon-btn:hover { transform: translateY(-50%); background: var(--color-bg-inverse); color: var(--color-text-inverse); } }
 .promo.is-hidden { display: none; }
 @media (max-width: 767px) {
   .promo__inner { min-height: 40px; padding: 8px 48px 8px 16px; }
@@ -215,23 +215,24 @@
 .header__contact { display: flex; align-items: center; gap: 10px; font-size: var(--font-body-m); line-height: var(--line-body-m); }
 .header__contacts { display: flex; flex-direction: column; gap: 4px; }
 .header__phone { display: flex; align-items: center; gap: 8px; font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); transition: color var(--dur-fast); }
-.header__phone:hover { color: var(--color-text-accent); }
+@media (hover: hover) { .header__phone:hover { color: var(--color-text-accent); } }
 .header__mail { display: flex; align-items: center; gap: 8px; color: var(--color-text-accent); }
 .header__actions { display: flex; align-items: center; gap: 14px; }
 .header__callback { display: inline-flex; align-items: center; gap: 16px; padding: 6px 6px 6px 26px; border-radius: var(--radius-full); background: var(--color-bg-accent); color: var(--color-text-on-accent); font-size: var(--font-button-l); font-weight: var(--fw-semibold); transition: background-color var(--dur-fast); }
-.header__callback:hover { background: var(--color-bg-accent-strong); color: var(--color-text-inverse); }
+@media (hover: hover) { .header__callback:hover { background: var(--color-bg-accent-strong); color: var(--color-text-inverse); } }
 .header__callback .icon-btn { width: 44px; height: 44px; background: var(--color-bg-page); }
-.header__callback:hover .icon-btn { animation: ring 0.6s ease; }
+@media (hover: hover) { .header__callback:hover .icon-btn { animation: ring 0.6s ease; } }
 @keyframes ring { 0%,100% { transform: rotate(0); } 20%,60% { transform: rotate(-14deg); } 40%,80% { transform: rotate(14deg); } }
 .cart-btn { position: relative; }
 .cart-btn__count { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--color-bg-inverse); color: var(--color-text-inverse); font-size: 12px; line-height: 20px; text-align: center; }
 .header__nav { position: relative; display: flex; align-items: center; gap: 20px; padding-bottom: 14px; }
 .catalog-btn { display: inline-flex; align-items: center; gap: 10px; min-height: var(--layout-nav-h); padding: 0 26px; border: 2px solid var(--color-border-strong); border-radius: var(--radius-full); font-size: var(--font-body-s); line-height: var(--line-body-s); font-weight: var(--fw-medium); white-space: nowrap; transition: background-color var(--dur-fast), color var(--dur-fast); }
-.catalog-btn:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+@media (hover: hover) { .catalog-btn:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); } }
 .nav { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--layout-nav-h); padding: 0 28px; border-radius: var(--radius-full); background: var(--color-bg-surface-alt); }
 .nav__link { position: relative; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; padding: 12px 0; font-size: var(--font-body-s); line-height: var(--line-body-s); font-weight: var(--fw-medium); transition: color var(--dur-fast); }
 .nav__link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; background: var(--color-bg-accent); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-base) var(--ease-out); }
-.nav__link:hover::after, .nav__link[aria-current="page"]::after { transform: scaleX(1); }
+.nav__link[aria-current="page"]::after { transform: scaleX(1); }
+@media (hover: hover) { .nav__link:hover::after { transform: scaleX(1); } }
 .nav__link .icon { width: 16px; height: 16px; }
 
 /* Выпадающий подраздел меню («О центре» → Преподаватели).
@@ -239,7 +240,8 @@
    не проваливался в зазор. */
 .nav__group { position: relative; display: flex; align-items: center; }
 .nav__group .nav__link .icon { transition: transform var(--dur-base) var(--ease-out); }
-.nav__group:hover .nav__link .icon, .nav__group:focus-within .nav__link .icon { transform: rotate(180deg); }
+.nav__group:focus-within .nav__link .icon { transform: rotate(180deg); }
+@media (hover: hover) { .nav__group:hover .nav__link .icon { transform: rotate(180deg); } }
 /* Левый край панели совпадает с первой буквой пункта: у .nav__link нет боковых
    отступов, поэтому left: 0 встаёт ровно под начало слова.
    Образец — выпадающий каталог: панель встаёт на той же высоте (низ строки меню
@@ -247,12 +249,14 @@
    скруглением и появлением. Отсчёт от низа плашки меню, а не от пункта: пункт
    бывает на пару пикселей ниже плашки, и панель съезжала бы. */
 .nav__drop { position: absolute; left: 0; top: calc(50% + var(--layout-nav-h) / 2); z-index: 60; padding-top: 24px; opacity: 0; visibility: hidden; transition: opacity var(--dur-base) var(--ease-out), visibility var(--dur-base); }
-.nav__group:hover .nav__drop, .nav__group:focus-within .nav__drop { opacity: 1; visibility: visible; }
+.nav__group:focus-within .nav__drop { opacity: 1; visibility: visible; }
+@media (hover: hover) { .nav__group:hover .nav__drop { opacity: 1; visibility: visible; } }
 /* Факультетов десять — на невысоком окне список прокручивается внутри себя */
 .nav__drop-inner { display: flex; flex-direction: column; gap: 2px; min-width: 220px; max-height: 62vh; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-2xl); border-radius: var(--radius-lg); background: var(--color-bg-page); box-shadow: var(--shadow-hover); transform: translateY(-8px); transition: transform var(--dur-base) var(--ease-out); }
-.nav__group:hover .nav__drop-inner, .nav__group:focus-within .nav__drop-inner { transform: none; }
+.nav__group:focus-within .nav__drop-inner { transform: none; }
+@media (hover: hover) { .nav__group:hover .nav__drop-inner { transform: none; } }
 .nav__drop a { padding: 9px 14px; border-radius: var(--radius-xs); font-size: var(--font-body-s); line-height: var(--line-body-s); white-space: nowrap; transition: background-color var(--dur-fast), color var(--dur-fast); }
-.nav__drop a:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+@media (hover: hover) { .nav__drop a:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); } }
 /* На планшете и мобильном .nav прокручивается по горизонтали и обрезал бы список —
    там эти пункты живут в боковом меню. */
 @media (max-width: 1199px) { .nav__drop { display: none; } }
@@ -286,8 +290,10 @@
 .mega__item .icon { flex: none; opacity: 0; transition: opacity var(--dur-fast); }
 /* Наведённый и выбранный пункт — тёмные, как кнопка «Каталог курсов» в шапке.
    Стрелка идёт по currentColor, поэтому белеет вместе с текстом. */
-.mega__item:hover, .mega__item.is-active { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
-.mega__item:hover .icon, .mega__item.is-active .icon { opacity: 1; }
+.mega__item.is-active { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+@media (hover: hover) { .mega__item:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); } }
+.mega__item.is-active .icon { opacity: 1; }
+@media (hover: hover) { .mega__item:hover .icon { opacity: 1; } }
 /* Тянется на всю высоту панели: высоту задаёт самая длинная колонка,
    а отступы панели остаются — растягивается ровно между ними. */
 .mega__media { align-self: stretch; min-height: 0; border-radius: var(--radius-md); overflow: hidden; background: var(--color-bg-surface-alt); }
@@ -308,6 +314,14 @@
 .drawer__nav a { padding: 14px 0; border-bottom: 1px solid var(--color-border-default); font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-medium); }
 /* Подпункт в боковом меню — со сдвигом и помельче родителя */
 .drawer__nav .drawer__sub { padding: 12px 0 12px 20px; font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-regular); color: var(--color-text-secondary); }
+/* Раздел с подпунктами: стрелка рядом со словом, по нажатию список плавно раскрывается
+   (grid-rows 0fr → 1fr); в свёрнутом виде подпункты скрыты и не ловят Tab */
+.drawer__toggle { display: flex; align-items: center; gap: 8px; width: 100%; padding: 14px 0; border-bottom: 1px solid var(--color-border-default); font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-medium); text-align: left; color: inherit; }
+.drawer__toggle .icon { flex: none; color: var(--color-text-secondary); transition: transform var(--dur-base) var(--ease-out); }
+.drawer__toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
+.drawer__subs { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base); }
+.drawer__group.is-open .drawer__subs { grid-template-rows: 1fr; visibility: visible; transition-delay: 0s; }
+.drawer__subs-inner { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 
 @media (max-width: 1199px) {
   .header__contact, .header__callback span { display: none; }
@@ -332,12 +346,12 @@
 
 /* ---------- Card base (hover lift) ---------- */
 .card-hover { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
-.card-hover:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+@media (hover: hover) { .card-hover:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); } }
 .media-zoom { overflow: hidden; }
 /* backface-visibility поднимает картинку в отдельный слой — масштаб идёт
    на композиторе, без перерисовки на основном потоке */
 .media-zoom img { transition: transform 0.6s var(--ease-out); backface-visibility: hidden; }
-.card-hover:hover .media-zoom img, .media-zoom:hover img { transform: scale(1.04); }
+@media (hover: hover) { .card-hover:hover .media-zoom img, .media-zoom:hover img { transform: scale(1.04); } }
 
 /* ---------- Course card ---------- */
 .course-card { position: relative; display: flex; flex-direction: column; border-radius: var(--radius-md); background: var(--color-bg-surface); overflow: hidden; }
@@ -351,12 +365,13 @@
 .course-card__price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-top: auto; }
 .course-card__old { font-size: var(--font-caption); color: var(--color-text-muted); text-decoration: line-through; }
 .course-card__now { font-size: var(--font-body-m); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
+@media (max-width: 767px) { .course-card__now { font-size: calc(var(--font-body-m) + 2px); font-weight: var(--fw-bold); } }
 .course-card__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .course-card__actions .btn { position: relative; z-index: 2; }
 .more-link { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-body-s); font-weight: var(--fw-medium); transition: color var(--dur-fast), gap var(--dur-fast); }
 .more-link .icon { width: 16px; height: 16px; }
-.more-link:hover { color: var(--color-text-accent); gap: 10px; }
-.course-card:hover .more-link { color: var(--color-text-accent); }
+@media (hover: hover) { .more-link:hover { color: var(--color-text-accent); gap: 10px; } }
+@media (hover: hover) { .course-card:hover .more-link { color: var(--color-text-accent); } }
 
 /* ---------- Direction tile ---------- */
 .dir-tile { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; min-height: 427px; padding: 24px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
@@ -365,8 +380,8 @@
 /* Тень под заголовком при наведении — отдельный слой с плавной прозрачностью в темп
    с увеличением фото. Раньше менялся сам градиент, а он не анимируется — тень прыгала. */
 .dir-tile::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(28,38,59,0) 35%, rgba(28,38,59,.85)); opacity: 0; transition: opacity 0.6s var(--ease-out); pointer-events: none; }
-.dir-tile:hover img { transform: scale(1.05); }
-.dir-tile:hover::after { opacity: 1; }
+@media (hover: hover) { .dir-tile:hover img { transform: scale(1.05); } }
+@media (hover: hover) { .dir-tile:hover::after { opacity: 1; } }
 .dir-tile .badge { align-self: flex-start; }
 .dir-tile__title { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-medium); }
 @media (max-width: 767px) { .dir-tile { min-height: 210px; padding: 14px; } .dir-tile__title { font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-bold); } }
@@ -377,14 +392,15 @@
 .cat-tile__title { max-width: 80%; font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-medium); }
 .cat-tile .icon-btn { width: clamp(48px, 2.917vw, 56px); height: clamp(48px, 2.917vw, 56px); background: var(--color-bg-page); }
 .cat-tile .icon-btn .icon { width: clamp(20px, 1.25vw, 24px); height: clamp(20px, 1.25vw, 24px); }
-.cat-tile:hover img { transform: scale(1.04); }
-.cat-tile:hover .icon-btn { background: var(--color-bg-accent); transform: rotate(45deg); }
+@media (hover: hover) { .cat-tile:hover img { transform: scale(1.04); } }
+@media (hover: hover) { .cat-tile:hover .icon-btn { background: var(--color-bg-accent); transform: rotate(45deg); } }
 @media (max-width: 767px) { .cat-tile { min-height: 165px; padding: 14px; } .cat-tile__title { font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); max-width: 100%; } .cat-tile .icon-btn { width: 40px; height: 40px; } .cat-tile .icon-btn .icon { width: 18px; height: 18px; } }
 
 /* ---------- Feature card ---------- */
 .feature { display: flex; flex-direction: column; gap: 12px; padding: var(--space-card); border-radius: var(--radius-md); background: var(--color-bg-surface); overflow: hidden; }
 .feature__media { border-radius: 16px; overflow: hidden; aspect-ratio: 374 / 220; }
 .feature__media img { width: 100%; height: 100%; object-fit: cover; }
+.feature__media picture { display: block; height: 100%; }
 .feature__media--natural { aspect-ratio: 748 / 560; }
 .feature__media--natural img { object-position: center top; }
 .feature__title { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
@@ -421,7 +437,7 @@
    на соседнюю — по умолчанию flex-элемент не сжимается меньше своего содержимого */
 .stat__body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .stat__label { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); max-width: 260px; }
-@media (max-width: 767px) { .stat { flex-direction: column; align-items: flex-start; gap: 4px; } .stat__media { width: 64px; height: 64px; } .stat__value { font-size: var(--font-h2); line-height: var(--line-h2); } }
+@media (max-width: 767px) { .stat { flex-direction: column; align-items: center; gap: 4px; } .stat__media { width: 64px; height: 64px; } .stat__value { font-size: var(--font-h2); line-height: var(--line-h2); } .stat__label { margin-inline: auto; } }
 
 /* ---------- Review card ---------- */
 /* Слайды отзывов крупные: на 1920 текстовый — 420 px, видео — 300 px (было 300 и 210) */
@@ -435,14 +451,27 @@
 .review--video .play { position: relative; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.9); transition: transform var(--dur-base) var(--ease-out); }
 .review--video .play::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); animation: pulse 2s ease-out infinite; }
 @keyframes pulse { from { transform: scale(.8); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
-.review--video:hover img { transform: scale(1.05); }
-.review--video:hover .play { transform: scale(1.1); }
+@media (hover: hover) { .review--video:hover img { transform: scale(1.05); } }
+@media (hover: hover) { .review--video:hover .play { transform: scale(1.1); } }
+/* Видеоотзыв и текст рядом с ним — один слайд ленты (reviews_block в build.py). На компьютере
+   пара выглядит как две соседние карточки, на телефоне слайд во всю ширину: видео и отзыв сбоку */
+.review-pair { display: flex; gap: var(--space-md); }
+.review-pair > .review { flex: none; }
+@media (max-width: 767px) {
+  .review, .review-pair { width: 100%; }
+  .review-pair { display: grid; grid-template-columns: 40% minmax(0, 1fr); gap: var(--space-xs); }
+  .review-pair > .review { width: auto; min-height: 0; }
+  .review-pair > .review--video { order: -1; }
+  .review-pair > .review:not(.review--video) { padding: 16px; gap: 10px; }
+  .review-pair .review__text { font-size: var(--font-body-s); line-height: var(--line-body-s); }
+  .review-pair .review__name { font-size: var(--font-body-m); line-height: var(--line-body-m); }
+}
 
 /* Carousel nav */
 .carousel { position: relative; }
 .carousel__nav { display: flex; gap: 12px; justify-content: center; }
 .carousel__btn { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-page); color: var(--color-text-primary); box-shadow: var(--shadow-card); transition: background-color var(--dur-fast), transform var(--dur-fast); }
-.carousel__btn:hover { background: var(--color-bg-accent); }
+@media (hover: hover) { .carousel__btn:hover { background: var(--color-bg-accent); } }
 .carousel__btn:disabled { opacity: .35; pointer-events: none; }
 .dots { display: flex; gap: 6px; justify-content: center; }
 .dots span { width: 8px; height: 8px; border-radius: 4px; background: var(--color-border-default); transition: width var(--dur-base), background-color var(--dur-base); }
@@ -456,8 +485,8 @@
 .teacher__name { font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); }
 .teacher__role { font-size: var(--font-caption); line-height: var(--line-caption); opacity: .8; }
 .teacher .icon-btn { width: 36px; height: 36px; background: var(--color-bg-page); color: var(--color-text-primary); }
-.teacher:hover img { transform: scale(1.05); }
-.teacher:hover .icon-btn { background: var(--color-bg-accent); transform: rotate(45deg); }
+@media (hover: hover) { .teacher:hover img { transform: scale(1.05); } }
+@media (hover: hover) { .teacher:hover .icon-btn { background: var(--color-bg-accent); transform: rotate(45deg); } }
 .teacher--l { width: 300px; }
 .teacher--l .teacher__name { font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-bold); }
 .teachers-grid .teacher { width: auto; }
@@ -468,19 +497,20 @@
 /* Закрытый вопрос при наведении мягко подсвечивается светло-бирюзовым, текст остаётся
    тёмным, стрелка в кружке становится бирюзовой. Прежнее перекрашивание в тёмно-синий
    с белым текстом было слишком резким. У раскрытой карточки реагирует только стрелка. */
-.faq:not([open]):hover { background: var(--color-bg-accent-soft); }
-.module:hover { background: var(--color-bg-inverse); border-color: transparent; box-shadow: none; color: var(--color-text-inverse); }
-.module:hover .module__title { color: var(--color-text-inverse); }
-.module:hover .module__content { color: rgba(255, 255, 255, .75); }
-.module:hover .module__num { color: var(--color-bg-accent); }
-.module:hover .module__hours { color: rgba(255, 255, 255, .6); }
+@media (hover: hover) { .faq:not([open]):hover { background: var(--color-bg-accent-soft); } }
+@media (hover: hover) { .module:hover { background: var(--color-bg-inverse); border-color: transparent; box-shadow: none; color: var(--color-text-inverse); } }
+@media (hover: hover) { .module:hover .module__title { color: var(--color-text-inverse); } }
+@media (hover: hover) { .module:hover .module__content { color: rgba(255, 255, 255, .75); } }
+@media (hover: hover) { .module:hover .module__num { color: var(--color-bg-accent); } }
+@media (hover: hover) { .module:hover .module__hours { color: rgba(255, 255, 255, .6); } }
 .module[open] { cursor: pointer; }
 .faq[open] { background: var(--color-bg-page); border-color: var(--color-border-default); }
 .faq__icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-page); transition: background-color .45s var(--ease-out), transform var(--dur-base) var(--ease-out); }
-.faq:not([open]):hover .faq__icon, .faq[open] .faq__icon { background: var(--color-bg-accent); }
+.faq[open] .faq__icon { background: var(--color-bg-accent); }
+@media (hover: hover) { .faq:not([open]):hover .faq__icon { background: var(--color-bg-accent); } }
 .faq[open] .faq__icon { transform: rotate(180deg); }
 /* Раскрытая карточка: единственная реакция на наведение — стрелка подаётся вверх */
-.faq[open]:hover .faq__icon { transform: translateY(-3px) rotate(180deg); }
+@media (hover: hover) { .faq[open]:hover .faq__icon { transform: translateY(-3px) rotate(180deg); } }
 .faq summary .faq__icon .icon { transform: none !important; }
 .faq__q { transition: color var(--dur-base) var(--ease-out); }
 .faq summary, .module summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 16px; padding: 20px 27px; }
@@ -507,7 +537,7 @@
 .schedule-table td:first-child { border-radius: var(--radius-full) 0 0 var(--radius-full); }
 .schedule-table td:last-child { border-radius: 0 var(--radius-full) var(--radius-full) 0; text-align: right; padding-right: 6px; }
 .schedule-table tr { transition: transform var(--dur-fast); }
-.schedule-table tbody tr:hover td { background: var(--color-bg-surface-alt); }
+@media (hover: hover) { .schedule-table tbody tr:hover td { background: var(--color-bg-surface-alt); } }
 .schedule-table .is-soon td { background: linear-gradient(90deg, var(--color-bg-inverse), var(--p-teal-900)); color: var(--color-text-inverse); background-attachment: fixed; }
 .schedule-table .is-soon td:nth-child(1) { background: var(--color-bg-inverse); }
 .schedule-table .is-soon td:last-child { background: var(--p-teal-900); }
@@ -549,7 +579,8 @@
 .location { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 18px 22px; border-radius: var(--radius-md); background: var(--color-bg-surface-alt); text-align: left; opacity: .6; transition: opacity var(--dur-fast), background-color var(--dur-fast); }
 /* По макету: 40 px от заголовка до первой карточки, 20 px между карточками */
 .map-block__title { text-align: center; margin-bottom: calc(var(--space-3xl) - var(--space-lg)); }
-.location.is-active, .location:hover { opacity: 1; background: var(--color-bg-surface); }
+.location.is-active { opacity: 1; background: var(--color-bg-surface); }
+@media (hover: hover) { .location:hover { opacity: 1; background: var(--color-bg-surface); } }
 .location__title { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
 .location__addr { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
 .location__link { display: inline-flex; align-items: center; gap: 8px; font-size: var(--font-caption); color: var(--color-text-muted); }
@@ -619,7 +650,7 @@
 .quiz__photo { border-radius: var(--radius-md); overflow: hidden; }
 .quiz__photo img { width: 100%; height: 100%; object-fit: cover; }
 @media (max-width: 1199px) { .quiz { grid-template-columns: 1fr; } .quiz__photo { display: none; } }
-@media (max-width: 767px) { .quiz__card { min-height: 0; padding: 24px 20px var(--space-4xl); } .quiz__doc { left: auto; right: 4%; top: 44%; width: 120px; } .quiz__star--1 { left: auto; right: 44%; top: 62%; width: 44px; } .quiz__star--2, .quiz__star--3 { display: none; } .quiz__text { max-width: 60%; } }
+@media (max-width: 767px) { .quiz__card { min-height: 0; gap: 72px; padding: 24px 20px var(--space-4xl); } .quiz__doc { left: auto; right: 4%; top: 44%; width: 120px; } .quiz__star--1 { left: auto; right: 44%; top: 62%; width: 44px; } .quiz__star--2, .quiz__star--3 { display: none; } .quiz__text { max-width: 60%; font-size: var(--font-body-s); line-height: var(--line-body-s); } }
 
 /* ---------- Stepper ---------- */
 .stepper { display: flex; gap: 40px; padding-bottom: 18px; border-bottom: 1px solid var(--color-border-default); counter-reset: step; }
@@ -676,7 +707,7 @@
 
 /* ---------- Store / social ---------- */
 .store-badge { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 10px; background: var(--color-bg-page); color: var(--color-text-primary); transition: transform var(--dur-fast) var(--ease-out); }
-.store-badge:hover { transform: translateY(-2px); }
+@media (hover: hover) { .store-badge:hover { transform: translateY(-2px); } }
 .store-badge small { display: block; font-size: 11px; line-height: 12px; }
 .store-badge b { display: block; font-size: 20px; line-height: 22px; }
 .store-badge--dark { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
@@ -694,12 +725,12 @@
 .footer__col { display: flex; flex-direction: column; gap: 10px; }
 .footer__col h3 { margin-bottom: 4px; font-size: var(--font-h4); line-height: var(--line-h4); }
 .footer__col a:not(.btn):not(.store-badge) { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .85; transition: opacity var(--dur-fast), color var(--dur-fast); }
-.footer__col a:not(.btn):not(.store-badge):hover { opacity: 1; color: var(--color-bg-accent); }
+@media (hover: hover) { .footer__col a:not(.btn):not(.store-badge):hover { opacity: 1; color: var(--color-bg-accent); } }
 .footer__muted { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .7; }
 .footer__legal { font-size: var(--font-caption); line-height: var(--line-caption); opacity: .7; }
 .footer__portal { width: 300px; border-radius: 10px; background: #fff; }
 .footer__bottom { display: flex; flex-wrap: wrap; gap: 8px 40px; padding-block: 24px 32px; font-size: var(--font-caption); opacity: .7; }
-.footer__bottom a:hover { opacity: 1; text-decoration: underline; }
+@media (hover: hover) { .footer__bottom a:hover { opacity: 1; text-decoration: underline; } }
 @media (max-width: 1199px) { .footer__lead { grid-template-columns: 1fr; gap: 32px; } .footer__cols { grid-template-columns: 1fr 1fr; gap: 40px; } }
 @media (max-width: 767px) {
   .footer { border-radius: 24px 24px 0 0; }
@@ -759,12 +790,12 @@ body.is-locked { overflow: hidden; }
 .search-modal__label { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
 .search-modal__chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 .search-chip { padding: 8px 16px; border-radius: var(--radius-full); background: var(--color-bg-surface); font-size: var(--font-body-s); line-height: var(--line-body-s); transition: background-color var(--dur-fast), color var(--dur-fast); }
-.search-chip:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+@media (hover: hover) { .search-chip:hover { background: var(--color-bg-inverse); color: var(--color-text-inverse); } }
 
 /* Живая выдача: карточка корзины, только во всю ширину окна, намного меньше и без крестика */
 .search-results { display: flex; flex-direction: column; gap: var(--space-xs); }
 .search-card { position: relative; display: grid; grid-template-columns: 136px minmax(0, 1fr) 152px auto; grid-template-areas: "media info price btn"; align-items: center; gap: 0 var(--space-lg); padding: 12px; border-radius: var(--radius-md); background: var(--color-bg-surface); transition: background-color var(--dur-fast), box-shadow var(--dur-fast); }
-.search-card--link:hover { background: var(--color-bg-surface-alt); }
+@media (hover: hover) { .search-card--link:hover { background: var(--color-bg-surface-alt); } }
 .search-card__media { grid-area: media; aspect-ratio: 424 / 274; border-radius: 12px; overflow: hidden; background: var(--color-bg-surface-alt); }
 .search-card__media img { width: 100%; height: 100%; object-fit: cover; }
 .search-card__info { grid-area: info; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -810,7 +841,7 @@ body.is-locked { overflow: hidden; }
 .courses-scroller .course-card__media { aspect-ratio: 440 / 250; }
 @media (max-width: 1439px) { .courses-scroller > .course-card { flex-basis: calc((100% - var(--space-lg) * 2) / 3); } }
 @media (max-width: 1199px) { .courses-scroller > .course-card { flex-basis: calc((100% - var(--space-lg)) / 2); } }
-@media (max-width: 767px) { .courses-scroller > .course-card { flex-basis: 86%; } }
+@media (max-width: 767px) { .courses-scroller > .course-card { flex-basis: 72%; } }
 
 /* ---------- Focus carousel (преподаватели): центральная карточка крупнее ---------- */
 /* Запас сверху и снизу под увеличенную центральную карточку: при scale(1.08) она
@@ -867,7 +898,7 @@ body.is-locked { overflow: hidden; }
   .schedule-table thead { margin-bottom: 20px; }
   .schedule-table tr { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.25fr); align-items: center; column-gap: 20px; }
   .schedule-table tbody tr { min-height: 57px; border-radius: 20px; background: var(--color-bg-page); transition: box-shadow var(--dur-fast); }
-  .schedule-table tbody tr:hover { box-shadow: var(--shadow-card); }
+  @media (hover: hover) { .schedule-table tbody tr:hover { box-shadow: var(--shadow-card); } }
   .schedule-table th, .schedule-table td { display: block; padding: 0 8px; text-align: center !important; background: none !important; border-radius: 0 !important; white-space: normal; }
   .schedule-table th { font-size: var(--font-body-l); line-height: var(--line-body-l); font-weight: var(--fw-regular); color: rgba(24, 25, 26, .84); }
   .schedule-table td { font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); }
