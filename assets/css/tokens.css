@@ -1,0 +1,175 @@
+/* =========================================================
+   МЦПО · Design tokens
+   Источник: Figma «МЦПО · UI Kit» → коллекции Primitives / Color / Size.
+   Имена переменных = Code syntax в Dev Mode.
+   ========================================================= */
+
+:root {
+  /* ---------- Primitives (не использовать в компонентах напрямую) ---------- */
+  --p-navy-900: #1c263b;
+  --p-navy-800: #252f37;
+  --p-navy-700: #2a3a55;
+  --p-teal-100: #e3faf8;
+  --p-teal-300: #9af0e8;
+  --p-teal-400: #5fe3d7;
+  --p-teal-500: #31dbcc;
+  --p-teal-700: #1ca2ac;
+  --p-teal-800: #0a7f87;
+  --p-teal-900: #0f5c6b;
+  --p-lime-300: #ceef85;
+  --p-sky-400: #00abf4;
+  --p-sky-300: #56ccff;
+  --p-neutral-0: #ffffff;
+  --p-neutral-50: #f3f4f7;
+  --p-neutral-100: #f3f6fa;
+  --p-neutral-200: #e3e7ed;
+  --p-neutral-300: #c1cbd2;
+  --p-neutral-500: #8c93a0;
+  --p-neutral-600: #535353;
+  --p-neutral-900: #18191a;
+  --p-red-500: #e5484d;
+
+  /* ---------- Color · semantic ---------- */
+  --color-bg-page: var(--p-neutral-0);
+  --color-bg-surface: var(--p-neutral-50);
+  --color-bg-surface-alt: var(--p-neutral-100);
+  --color-bg-inverse: var(--p-navy-900);
+  --color-bg-inverse-soft: var(--p-navy-700);
+  --color-bg-accent: var(--p-teal-400);
+  --color-bg-accent-hover: var(--p-teal-500);
+  /* Ховер главной кнопки. Между accent и этим оттенком читаемых промежуточных нет:
+     фон уже тёмен для тёмного текста и ещё светел для белого. Белый текст — 4,8:1. */
+  --color-bg-accent-strong: var(--p-teal-800);
+  --color-bg-accent-soft: var(--p-teal-100);
+  --color-bg-badge-edu: var(--p-lime-300);
+  --color-bg-promo: var(--p-sky-400);
+  --color-bg-promo-light: var(--p-sky-300);
+
+  --color-text-primary: var(--p-navy-900);
+  --color-text-secondary: var(--p-neutral-600);
+  --color-text-muted: var(--p-neutral-500);
+  --color-text-inverse: var(--p-neutral-0);
+  --color-text-on-accent: var(--p-teal-900);
+  --color-text-accent: var(--p-teal-700);
+  --color-text-error: var(--p-red-500);
+
+  --color-border-default: var(--p-neutral-200);
+  --color-border-strong: var(--p-navy-900);
+  --color-border-inverse: var(--p-neutral-0);
+  --color-border-accent: var(--p-teal-400);
+  --color-border-error: var(--p-red-500);
+
+  /* ---------- Typography ---------- */
+  --font-base: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Кегли плавно масштабируются от 1200 до 1920 px; на 1920 = значения макета */
+  --font-display: clamp(44px, 3.125vw, 60px); --line-display: calc(var(--font-display) * 1.07);
+  --font-h1: clamp(30px, 1.979vw, 38px); --line-h1: calc(var(--font-h1) * 1.21);
+  --font-h2: clamp(26px, 1.667vw, 32px); --line-h2: calc(var(--font-h2) * 1.25);
+  --font-h3: clamp(20px, 1.250vw, 24px); --line-h3: calc(var(--font-h3) * 1.25);
+  --font-h4: clamp(17px, 1.042vw, 20px); --line-h4: calc(var(--font-h4) * 1.3);
+  --font-body-l: clamp(17px, 1.042vw, 20px); --line-body-l: calc(var(--font-body-l) * 1.4);
+  --font-body-m: clamp(16px, 0.938vw, 18px); --line-body-m: calc(var(--font-body-m) * 1.44);
+  --font-body-s: clamp(14px, 0.833vw, 16px); --line-body-s: calc(var(--font-body-s) * 1.38);
+  --font-caption: clamp(13px, 0.729vw, 14px); --line-caption: calc(var(--font-caption) * 1.3);
+  --font-button-l: clamp(17px, 1.042vw, 20px); --line-button-l: calc(var(--font-button-l) * 1.2);
+  --font-button-m: clamp(15px, 0.833vw, 16px); --line-button-m: calc(var(--font-button-m) * 1.25);
+  --font-promo: clamp(20px, 1.771vw, 34px); --line-promo: calc(var(--font-promo) * 1.2);
+
+  /* ---------- Spacing ---------- */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: clamp(20px, 1.250vw, 24px);
+  --space-2xl: clamp(24px, 1.667vw, 32px);
+  --space-3xl: clamp(30px, 2.083vw, 40px);
+  --space-4xl: clamp(44px, 3.125vw, 60px);
+  --space-section: clamp(64px, 5.208vw, 100px);
+  --space-card: clamp(26px, 1.875vw, 36px);
+  --space-btn-x: clamp(24px, 1.562vw, 30px);
+  --space-btn-y: clamp(13px, 0.781vw, 15px);
+
+  /* ---------- Radius ---------- */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 20px;
+  --radius-lg: 25px;
+  --radius-full: 100px;
+
+  /* ---------- Layout ---------- */
+  --layout-container: none;  /* без верхнего предела: контент тянется вместе с экраном */
+  --layout-width: 85%;       /* поля по бокам — по 7,5% ширины экрана */
+  --layout-gutter: 16px;
+  --layout-btn-h-l: clamp(50px, 3.021vw, 58px);
+  --layout-btn-h-m: 44px;
+  --layout-input-h: clamp(48px, 2.708vw, 52px);
+  --layout-nav-h: 50px;
+
+  /* ---------- Effects ---------- */
+  /* Подложка карточки преподавателя: тёмно-синий уходит в глубокий бирюзовый */
+  --gradient-person: linear-gradient(60deg, var(--p-navy-900) 18%, var(--p-teal-900) 96%);
+  /* Обложка инструкции на «Трудоустройстве»: синий уходит в бирюзовый по диагонали */
+  --gradient-guide: linear-gradient(155deg, var(--p-navy-700) 14%, var(--p-navy-900) 54%, var(--p-teal-900) 86%);
+
+  --shadow-card: 0 4px 16px rgba(28, 38, 59, 0.06);
+  --shadow-hover: 0 14px 32px -6px rgba(28, 38, 59, 0.12);
+  --focus-ring: 0 0 0 3px rgba(95, 227, 215, 0.55);
+
+  /* ---------- Motion ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 0.2s;
+  --dur-base: 0.3s;
+  --dur-slow: 0.6s;
+}
+
+/* Tablet */
+@media (max-width: 1199px) {
+  :root {
+    --layout-gutter: 32px;
+    --font-display: 48px; --line-display: 54px;
+    --font-h1: 32px;      --line-h1: 40px;
+    --font-h2: 28px;      --line-h2: 34px;
+    --space-section: 80px;
+  }
+}
+
+/* Mobile — значения режима «Mobile» из Figma */
+@media (max-width: 767px) {
+  :root {
+    --layout-gutter: 16px;
+    --font-display: 40px; --line-display: 44px;
+    --font-h1: 28px;      --line-h1: 34px;
+    --font-h2: 24px;      --line-h2: 30px;
+    --font-h3: 20px;      --line-h3: 26px;
+    --font-h4: 17px;      --line-h4: 22px;
+    --font-body-l: 16px;  --line-body-l: 22px;
+    --font-body-m: 16px;  --line-body-m: 22px;
+    --font-body-s: 14px;  --line-body-s: 20px;
+    --font-caption: 12px; --line-caption: 16px;
+    --font-button-l: 16px; --line-button-l: 20px;
+    --font-button-m: 15px; --line-button-m: 18px;
+    --font-promo: 14px;   --line-promo: 20px;
+
+    --space-sm: 10px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 16px;
+    --space-2xl: 20px;
+    --space-3xl: 24px;
+    --space-4xl: 32px;
+    --space-section: 56px;
+    --space-card: 20px;
+    --space-btn-x: 24px;
+    --space-btn-y: 14px;
+
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --layout-btn-h-l: 52px;
+  }
+}

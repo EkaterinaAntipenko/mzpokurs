@@ -1,0 +1,562 @@
+/* =========================================================
+   МЦПО · Page layouts — композиции блоков страниц (раздел 03–04 Figma)
+   ========================================================= */
+
+/* ---------- Page intro (H1 + lead) ---------- */
+.intro { display: flex; flex-direction: column; gap: var(--space-xl); padding-top: 4px; }
+.intro__lead { max-width: 1000px; font-size: var(--font-body-l); line-height: var(--line-body-l); color: var(--color-text-secondary); }
+
+/* ---------- Home hero ---------- */
+.hero { display: grid; grid-template-columns: 702fr 662fr; gap: 16px; min-height: clamp(520px, 34vw, 650px); }
+.hero__main { position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 40px 35px 40px 37px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
+
+/* Затемнение из макета: прозрачное до 14% высоты, к 71% уходит в rgba(14,54,78,.4).
+   Оно легче прежнего, поэтому заголовок держится на собственной тени. */
+.hero__main::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(255,255,255,0) 14.3%, rgba(14,54,78,.4) 71.4%); }
+.hero__lead { opacity: .88; font-size: var(--font-body-l); line-height: var(--line-body-l); max-width: 600px; }
+/* Зазор между заголовком и строкой с ползунком фиксированный. Раньше стояли
+   space-between и min-height, и на коротком заголовке промежуток разъезжался —
+   текст будто висел в воздухе. Высоту героя задаёт .hero, блок прижат к низу. */
+.hero-slider__body { display: flex; flex-direction: column; gap: var(--space-lg); width: min(626px, 100%); }
+.hero-slider__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+.hero-slider__more { flex: none; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: 14px; }
+.hero__tiles { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 16px; }
+.hero__tiles .cat-tile { min-height: 0; }
+.hero-in > * { animation: rise 0.8s var(--ease-out) both; }
+.hero-in > *:nth-child(2) { animation-delay: .08s; } .hero-in > *:nth-child(3) { animation-delay: .16s; }
+@keyframes rise { from { opacity: 0; transform: translateY(20px); } }
+@media (max-width: 1199px) { .hero { grid-template-columns: 1fr; min-height: 0; } .hero__main { min-height: 520px; } .hero__tiles .cat-tile { min-height: 220px; } }
+@media (max-width: 767px) { .hero__main::before { background: linear-gradient(180deg, rgba(28,38,59,.1) 0%, rgba(28,38,59,.55) 35%, rgba(28,38,59,.92) 75%); } .hero__main { min-height: 440px; padding: 20px; gap: 16px; } .hero__actions .btn { width: 100%; } .hero__actions .btn--white { display: none; } .hero__tiles { gap: 12px; } .hero__tiles .cat-tile { min-height: 165px; } }
+
+/* ---------- Why MCPO ---------- */
+.why { display: flex; flex-direction: column; align-items: center; gap: 40px; padding: 60px; border-radius: var(--radius-lg); background: var(--color-bg-surface); text-align: center; }
+.why__stats { display: grid; grid-template-columns: repeat(2, minmax(0, 480px)); gap: 48px 120px; justify-content: center; text-align: left; }
+@media (max-width: 767px) { .why { padding: 28px 20px; align-items: stretch; text-align: left; gap: 24px; } .why__stats { grid-template-columns: 1fr 1fr; gap: 20px 12px; } }
+
+/* ---------- Bento ---------- */
+/* Раскладка 1:1 с макетом: «диплом» и «преподаватели» — высокие карточки по краям,
+   между ними две обычные, снизу широкая «очно/дистанционно» и «индивидуальный подход». */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "diploma loyalty  teachers"
+    "diploma access   teachers"
+    "format  format   approach";
+  gap: var(--space-lg);
+}
+.bento__diploma  { grid-area: diploma; }
+.bento__loyalty  { grid-area: loyalty; }
+.bento__teachers { grid-area: teachers; }
+.bento__access   { grid-area: access; }
+.bento__format   { grid-area: format; }
+.bento__approach { grid-area: approach; }
+
+@media (max-width: 1199px) {
+  .bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "diploma  teachers"
+      "loyalty  access"
+      "format   format"
+      "approach approach";
+  }
+}
+@media (max-width: 767px) {
+  .bento {
+    grid-template-columns: 1fr;
+    grid-template-areas: "diploma" "loyalty" "teachers" "access" "format" "approach";
+  }
+}
+
+/* ---------- Documents ---------- */
+.docs { display: grid; grid-template-columns: minmax(0, 34%) 1fr; align-items: center; gap: 40px; padding: 50px 60px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.docs__imgs { display: flex; justify-content: center; align-items: flex-end; gap: clamp(12px, 1.4vw, 24px); min-width: 0; }
+.docs__imgs img { height: clamp(260px, 20vw, 380px); width: auto; max-width: calc((100% - 48px) / 3); object-fit: contain; border-radius: 6px; box-shadow: var(--shadow-card); }
+.docs__imgs--single { grid-template-columns: 1fr; justify-items: center; }
+.docs__imgs--single img { width: auto; max-width: 100%; max-height: 340px; box-shadow: none; }
+@media (max-width: 1199px) { .docs { grid-template-columns: 1fr; padding: 40px; } }
+@media (max-width: 767px) { .docs { padding: 28px 20px; gap: 20px; } .docs__imgs { gap: 8px; } .docs__imgs img { height: 150px; } }
+/* «Документы после курса»: небольшой диплом справа */
+.docs--course { grid-template-columns: 1fr auto; }
+.docs__diploma { display: grid; place-items: center; }
+.docs__diploma img { width: clamp(180px, 14vw, 260px); height: auto; }
+@media (max-width: 1199px) { .docs--course { grid-template-columns: 1fr; } .docs__diploma { justify-items: start; } }
+
+/* ---------- Jobs ---------- */
+.jobs { display: grid; grid-template-columns: minmax(0, 33%) 1fr; gap: 20px; }
+.jobs__photo-card { display: flex; flex-direction: column; gap: 10px; padding: 36px 36px 0; border-radius: var(--radius-md); background: var(--color-bg-surface); overflow: hidden; }
+.jobs__photo-card img { width: calc(100% + 72px); max-width: none; margin: auto -36px 0; border-radius: 0; }
+.jobs__col { display: flex; flex-direction: column; gap: 20px; }
+.jobs__dark { position: relative; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 36px; border-radius: var(--radius-md); background: var(--color-bg-inverse); color: var(--color-text-inverse); overflow: hidden; isolation: isolate; }
+.jobs__dark .deco { position: absolute; right: 40px; top: 30px; width: 224px; z-index: -1; animation: float 6s ease-in-out infinite; }
+.jobs__dark p { max-width: 480px; opacity: .7; }
+.jobs__light { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 36px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
+@media (max-width: 1199px) { .jobs { grid-template-columns: 1fr; } .jobs__photo-card { display: none; } }
+@media (max-width: 767px) { .jobs__dark, .jobs__light { padding: 24px 20px; } .jobs__dark .deco { display: none; } .jobs__dark .btn { width: 100%; } }
+
+/* ---------- App ---------- */
+.app { position: relative; display: grid; grid-template-columns: minmax(0, 46%) 1fr; align-items: center; gap: 40px; min-height: 465px; padding: 30px 60px 0; border-radius: var(--radius-lg); overflow: hidden; isolation: isolate; }
+.app > img.app__bg { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; }
+.app__phone { align-self: end; justify-self: end; width: min(466px, 100%); }
+@media (max-width: 1199px) { .app { grid-template-columns: 1fr; padding: 40px; } .app__phone { display: none; } }
+@media (max-width: 767px) { .app { padding: 28px 20px; min-height: 0; } }
+
+/* ---------- Logos strip ---------- */
+.logos { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+.logos img { height: 90px; width: auto; }
+@media (max-width: 767px) { .logos { justify-content: center; gap: 20px; } .logos img { height: 56px; } }
+
+/* ---------- Catalog (faculty) ---------- */
+.catalog { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+.catalog__filters { display: flex; flex-direction: column; gap: 16px; }
+/* wrap + min-width: 0 — заголовок сжимается и переносится, а не выталкивает
+   кнопку фильтров и счётчик за пределы полосы (на 768 px не хватало ~50 px) */
+.catalog__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-radius: 16px; background: var(--color-bg-surface); }
+.catalog__bar h2 { min-width: 0; }
+.catalog__results { display: flex; flex-direction: column; gap: 20px; }
+.catalog__filter-btn { display: none; }
+@media (max-width: 1199px) {
+  .catalog { grid-template-columns: 1fr; }
+  .catalog__filters { position: fixed; inset: 0 0 0 auto; z-index: 120; width: min(360px, 100%); padding: 20px 16px; overflow-y: auto; background: var(--color-bg-page); transform: translateX(100%); transition: transform var(--dur-base) var(--ease-out); box-shadow: var(--shadow-hover); }
+  .catalog__filters.is-open { transform: none; }
+  .catalog__filter-btn { display: inline-flex; }
+}
+@media (max-width: 767px) { .catalog__bar { padding: 0; background: none; } .catalog__bar h2 { display: none; } }
+/* Колонки каталога считаем с оглядкой на сайдбар: он забирает 320 px, и до
+   1500 px три карточки сжимаются до 220–305 px — кнопка со ссылкой в подвале
+   карточки перестают помещаться в строку. */
+@media (max-width: 1499px) { .catalog__results .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px)  { .catalog__results .grid-3 { grid-template-columns: 1fr; } }
+.filters-head { display: none; }
+@media (max-width: 1199px) { .filters-head { display: flex; justify-content: space-between; align-items: center; } }
+
+/* ---------- For whom ---------- */
+.whom-card { display: flex; flex-direction: column; gap: 16px; padding: 32px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.whom-card__head { display: flex; align-items: center; gap: 16px; }
+.whom-card__head img { width: 60px; height: 64px; object-fit: contain; flex: none; transition: transform var(--dur-slow) var(--ease-out); }
+
+@media (max-width: 767px) { .whom-card { padding: 18px 16px; } .whom-card__head img { width: 44px; height: 48px; } }
+
+/* ---------- Perspectives ---------- */
+.persp { display: grid; grid-template-columns: 290px 1fr 1fr; gap: 20px; }
+.persp__card { display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.persp__card img { margin-top: 10px; border-radius: 16px; aspect-ratio: 290 / 216; object-fit: cover; }
+@media (max-width: 1199px) { .persp { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 767px) { .persp { grid-template-columns: 1fr 1fr; gap: 12px; } .persp__card { padding: 16px; } .persp__card--photo { grid-column: 1 / -1; } .persp__card:not(.persp__card--photo) { order: -1; } .persp .t-display { font-size: var(--font-h1); line-height: var(--line-h1); } }
+
+/* ---------- Expert ---------- */
+.expert { display: grid; grid-template-columns: 409px 1fr; gap: 16px; }
+.expert__photo { border-radius: var(--radius-md); overflow: hidden; }
+.expert__photo img { width: 100%; height: 100%; object-fit: cover; }
+.expert__card { display: flex; flex-direction: column; gap: 20px; padding: 40px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.expert__tags { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: var(--font-body-s); color: var(--color-text-muted); }
+.expert__quote { font-size: var(--font-body-l); line-height: var(--line-body-l); }
+/* Фото было жёстко 409 px до самого мобильного: на 768 px под текст оставалось
+   148 px. Переводим на долю ширины — колонка текста больше не схлопывается. */
+@media (max-width: 1199px) { .expert { grid-template-columns: minmax(0, 34%) 1fr; } .expert__card { padding: 28px; } }
+@media (max-width: 767px) { .expert { grid-template-columns: 1fr; } .expert__photo { aspect-ratio: 343 / 300; } .expert__card { padding: 20px; } }
+
+/* ---------- Course hero ---------- */
+.course-hero { position: relative; display: grid; grid-template-columns: 1fr 440px; align-items: center; gap: 40px; padding: 36px 70px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
+.course-hero > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.course-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(28,38,59,.58); }
+.course-hero__copy { display: flex; flex-direction: column; gap: 22px; }
+.course-hero__copy h1 { max-width: 560px; }
+.bullets { display: flex; flex-direction: column; gap: 10px; }
+.bullets li { display: flex; align-items: center; gap: 12px; }
+.bullets li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--color-bg-accent); }
+.course-hero__form { display: flex; flex-direction: column; gap: 14px; padding: 28px; border-radius: var(--radius-md); background: var(--color-bg-page); color: var(--color-text-primary); }
+.price-line { display: none; }
+@media (max-width: 1199px) { .course-hero { grid-template-columns: 1fr; padding: 40px; } }
+@media (max-width: 767px) {
+  .course-hero { padding: 24px 20px; }
+  .course-hero .btn--outline-inverse { display: none; }
+  .course-hero__actions .btn { width: 100%; }
+  .course-hero__form { padding: 20px 16px; border-radius: var(--radius-md); }
+  .price-line { display: flex; align-items: baseline; gap: 10px; }
+}
+
+/* ---------- Schedule block (course) ---------- */
+.schedule-card { display: flex; flex-direction: column; gap: 20px; padding: 48px 40px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+@media (max-width: 767px) { .schedule-card { padding: 20px 16px; background: none; } }
+
+/* ---------- Description ---------- */
+.desc { display: grid; grid-template-columns: 1fr 530px; align-items: center; gap: 40px; padding: 24px 24px 24px 50px; border-radius: var(--radius-lg); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.desc p { opacity: .85; }
+.desc img { border-radius: var(--radius-md); aspect-ratio: 530 / 418; object-fit: cover; }
+@media (max-width: 1199px) { .desc { grid-template-columns: 1fr; padding: 32px; } .desc img { order: -1; } }
+@media (max-width: 767px) { .desc { padding: 16px 16px 24px; gap: 16px; } }
+
+/* ---------- Salary ---------- */
+.salary { display: grid; grid-template-columns: 1fr 390px; gap: 24px; padding: 40px; border-radius: var(--radius-lg); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.salary__bars { display: flex; flex-direction: column; gap: 16px; }
+.salary__track { border-radius: 12px; background: var(--color-bg-inverse-soft); overflow: hidden; }
+.salary__bar { display: flex; flex-direction: column; justify-content: center; min-height: 64px; padding: 8px 24px; border-radius: 12px; background: var(--color-bg-accent); color: var(--color-text-primary); width: 0; min-width: 0; transition: width 1.2s var(--ease-out), min-width 1.2s var(--ease-out); white-space: nowrap; overflow: hidden; }
+.is-visible .salary__bar, .no-js .salary__bar { min-width: max-content; }
+.no-js .salary__bar { width: var(--w); transition: none; }
+.salary__bar small { color: var(--color-text-on-accent); font-size: var(--font-caption); }
+.is-visible .salary__bar { width: var(--w); }
+.salary img { border-radius: var(--radius-md); height: 100%; object-fit: cover; }
+@media (max-width: 1199px) { .salary { grid-template-columns: 1fr; } .salary img { display: none; } }
+@media (max-width: 767px) { .salary { padding: 24px 16px; } .salary__bar { min-height: 56px; padding: 6px 14px; } }
+
+/* ---------- Live learning ---------- */
+.live { display: grid; grid-template-columns: 1fr 526px; align-items: center; gap: 40px; padding: 24px 24px 24px 40px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.live img { border-radius: var(--radius-md); aspect-ratio: 526 / 401; object-fit: cover; }
+@media (max-width: 1199px) { .live { grid-template-columns: 1fr; padding: 24px; } }
+
+/* ---------- Schedule page ---------- */
+.filter-bar { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; align-items: end; gap: 24px; padding: 28px; border-radius: var(--radius-md); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.filter-bar label { display: flex; flex-direction: column; gap: 10px; }
+.filter-bar__actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.filter-bar__actions button[type=reset] { font-size: var(--font-caption); text-decoration: underline; opacity: .7; }
+.sched-layout { display: grid; grid-template-columns: 400px 1fr; gap: 30px; align-items: start; }
+.course-list { position: sticky; top: 180px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 8px; }
+.course-list a { padding: 18px 24px; border-radius: 16px; background: var(--color-bg-surface); transition: background-color var(--dur-fast), color var(--dur-fast); }
+.course-list a:hover { background: var(--color-bg-surface-alt); }
+.course-list a[aria-current] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.sched-course { display: flex; flex-direction: column; gap: 20px; padding: 36px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.sched-course__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.sched-course__head .badge { flex: none; }
+@media (max-width: 1199px) { .filter-bar { grid-template-columns: 1fr 1fr; } .sched-layout { grid-template-columns: 1fr; } .course-list { display: none; } }
+@media (max-width: 767px) { .filter-bar { grid-template-columns: 1fr; padding: 20px 16px; gap: 14px; } .sched-course { padding: 20px 16px; } .sched-course__head { flex-direction: column; } }
+
+/* ---------- Events ---------- */
+.events-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 1199px) { .events-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .events-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Teachers page ---------- */
+.teacher-group { display: flex; flex-direction: column; gap: 32px; padding: 36px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.teachers-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 1199px) { .teachers-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .teacher-group { padding: 0; background: none; gap: 16px; } .teachers-grid { grid-template-columns: 1fr 1fr; gap: 11px; } }
+
+/* ---------- Contacts ---------- */
+.details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 767px) { .details { grid-template-columns: 1fr; gap: 12px; } }
+
+/* ---------- Cart / checkout ---------- */
+.checkout { display: grid; grid-template-columns: 1fr 440px; gap: 20px; align-items: start; }
+.checkout__step { display: flex; flex-direction: column; gap: 18px; padding: 28px 36px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.checkout__step h1 { font-size: var(--font-h2); line-height: var(--line-h2); }
+.checkout__step .stepper { padding-bottom: 14px; }
+.checkout__step .bullets { gap: 6px; font-size: var(--font-body-s); line-height: var(--line-body-s); }
+.checkout__side { display: flex; flex-direction: column; gap: 14px; }
+.checkout .summary { top: calc(var(--site-top-h, 180px) + 16px); gap: 10px; padding: 20px 22px; }
+.checkout .summary__media { aspect-ratio: 388 / 140; }
+.checkout .summary .t-h3 { font-size: var(--font-h4); line-height: var(--line-h4); }
+.checkout .summary .t-h2 { font-size: var(--font-h3); line-height: var(--line-h3); }
+.format-options { display: flex; flex-direction: column; gap: 12px; max-width: 580px; }
+.format-option { display: flex; align-items: center; gap: 16px; padding: 14px 22px; border-radius: 16px; background: var(--color-bg-page); border: 2px solid transparent; cursor: pointer; transition: border-color var(--dur-fast); }
+.format-option:hover { border-color: var(--color-border-default); }
+.format-option input { accent-color: var(--p-teal-700); width: 20px; height: 20px; }
+.format-option:has(input:checked) { border-color: var(--color-border-accent); }
+.format-option__name { flex: 1; font-size: var(--font-h4); font-weight: var(--fw-bold); }
+.checkout__form { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
+.choice-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice-row label { cursor: pointer; }
+.choice-row input { position: absolute; opacity: 0; }
+.choice-row span { display: inline-block; padding: 10px 20px; border-radius: var(--radius-full); background: var(--color-bg-page); transition: background-color var(--dur-fast), color var(--dur-fast); }
+.choice-row input:checked + span { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.choice-row input:focus-visible + span { box-shadow: var(--focus-ring); }
+.checkout__next { align-self: flex-end; }
+.checkout__mini { display: none; }
+@media (max-width: 1199px) { .checkout { grid-template-columns: 1fr; } .summary { position: static; } }
+@media (max-width: 767px) { .checkout__mini { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--color-bg-surface); } .checkout__step { padding: 0; background: none; gap: 20px; } .checkout__side .summary, .checkout__side > .btn { display: none; } .checkout__next { display: none; } }
+
+.live.is-switching > * { animation: fade-in .45s var(--ease-out) both; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---------- Страница преподавателя ---------- */
+.person { display: grid; grid-template-columns: minmax(240px, 26%) minmax(0, 1fr); gap: var(--space-lg); align-items: start; }
+/* Градиент виден по краям и пока грузится фото; в макете фото — вырезанное
+   по контуру, у нас обычное, поэтому оно закрывает карточку целиком. */
+/* Фото не выталкивает блок за первый экран: высота ограничена окном
+   за вычетом шапки и хлебных крошек. */
+.person__photo { position: relative; aspect-ratio: 441 / 630; max-height: min(600px, calc(100vh - 300px)); border-radius: var(--radius-lg); overflow: hidden; background: var(--gradient-person); }
+.person__img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.person__star { position: absolute; right: -6%; top: 4%; z-index: 1; width: 34%; height: auto; opacity: .35; pointer-events: none; }
+.person__card { display: flex; flex-direction: column; gap: var(--space-3xl); padding: var(--space-card); }
+.person__badges { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.person__block { display: flex; flex-direction: column; gap: var(--space-md); }
+.person__subtitle { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
+.person__more { align-self: center; }
+@media (max-width: 1199px) {
+  .person { grid-template-columns: 1fr; }
+  .person__photo { aspect-ratio: 16 / 11; }
+  .person__card { padding: var(--space-card) 0 0; }
+}
+@media (max-width: 767px) {
+  .person__photo { aspect-ratio: 4 / 4.4; }
+  .person__card { gap: var(--space-2xl); }
+}
+
+/* ---------- Акции ---------- */
+.promos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
+.promo-card { display: flex; flex-direction: column; border-radius: var(--radius-md); overflow: hidden; background: var(--color-bg-surface); }
+.promo-card__media { aspect-ratio: 678 / 252; overflow: hidden; background: var(--color-bg-surface-alt); }
+.promo-card__media img { width: 100%; height: 100%; object-fit: cover; }
+.promo-card__body { flex: 1; display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--space-card); }
+.promo-card__title { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
+.promo-card__text { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
+/* margin-top: auto прижимает таймер и кнопку к низу — карточки в ряду
+   выравниваются, даже если заголовки разной длины */
+.promo-card__timer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; margin-top: auto; }
+.promo-card__label { font-size: var(--font-body-m); line-height: var(--line-body-m); }
+.promo-card__left { padding: 8px 22px; border-radius: var(--radius-full); background: var(--color-bg-page); font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); white-space: nowrap; }
+.promo-card.is-over .promo-card__left { color: var(--color-text-muted); }
+@media (max-width: 1199px) { .promos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .promos { grid-template-columns: 1fr; } }
+
+/* ---------- О нас ---------- */
+/* Заголовок слева, колонка карточек справа — как в макете */
+.numbers { display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr); gap: var(--space-4xl); align-items: start; }
+.numbers__title { font-size: var(--font-h1); line-height: var(--line-h1); font-weight: var(--fw-bold); letter-spacing: -0.5px; }
+/* Заголовок стоит на месте, пока рядом прокручиваются цифры, и уходит вместе с концом блока:
+   липкий элемент не выходит за свою ячейку сетки, а она высотой со столбец карточек */
+@media (min-width: 1200px) { .numbers__title { position: sticky; top: calc(var(--site-top-h, 180px) + var(--space-2xl)); } }
+.numbers__list { display: flex; flex-direction: column; gap: var(--space-lg); }
+.number { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-lg); min-height: 260px; padding: var(--space-card); border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.number__text { display: flex; flex-direction: column; gap: var(--space-sm); min-width: 0; }
+.number__value { font-size: var(--font-h1); line-height: var(--line-h1); font-weight: var(--fw-bold); }
+.number__desc { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
+.number__pic { flex: none; width: clamp(88px, 8vw, 140px); height: auto; }
+
+/* Лицензии — тёмная карточка, документы листаются по кругу ([data-carousel]) */
+.licences { display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr); gap: var(--space-3xl); align-items: center; padding: var(--space-4xl); border-radius: var(--radius-lg); background: var(--color-bg-inverse); color: var(--color-text-inverse); overflow: hidden; }
+.licences__text { display: flex; flex-direction: column; gap: var(--space-lg); align-items: flex-start; }
+.licences__lead { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .7; }
+.licences__docs { gap: var(--space-lg); }
+/* Сканы одной высоты, ширина — по пропорциям листа, как в макете. Четыре документа
+   вместе должны быть шире ленты, иначе петле не хватит кадров: отсюда высоты ниже */
+.licences__docs img { flex: none; width: auto; height: clamp(250px, 18.44vw, 354px); border-radius: 10px; }
+
+/* «Занятия по-настоящему полезны» */
+.useful { display: grid; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); align-items: center; gap: var(--space-3xl); padding: var(--space-3xl) var(--space-4xl); border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.useful__title { font-size: var(--font-h2); line-height: var(--line-h2); font-weight: var(--fw-bold); }
+.useful__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2xl); }
+.useful__item { display: flex; flex-direction: column; gap: 4px; }
+.useful__value { font-size: var(--font-h2); line-height: var(--line-h2); font-weight: var(--fw-bold); }
+.useful__label { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
+
+/* Стена партнёров на «О нас»: 18 логотипов, последний ряд по центру */
+.logos--wall { justify-content: center; gap: var(--space-2xl) var(--space-3xl); }
+.logos--wall img { height: 110px; width: auto; max-width: 260px; object-fit: contain; }
+
+.jobs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2xl); flex-wrap: wrap; }
+
+/* Преподаватели — тёмная полоса во всю ширину экрана */
+.tutors-band { padding-block: var(--space-section); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.tutors-band__title { font-size: var(--font-h1); line-height: var(--line-h1); font-weight: var(--fw-bold); text-align: center; }
+/* без отступа прилипания: иначе лента сдвигается на 16 px и четвёртую карточку срезает */
+.tutors { gap: var(--space-lg); scroll-padding-inline: 0; }
+/* Тёмная точка на тёмной полосе пропадала — здесь активная точка акцентная */
+.tutors-band .dots span.is-active { background: var(--color-bg-accent); }
+/* Карточка — макет 1313-4432, уменьшенная: на десктопе ровно четыре в ряд
+   (на 1920 — 393 px, поля 24, снизу 50, фото 391:372), остальные — листать */
+.tutor { --tutor-pad: var(--space-xl); flex: 0 0 calc((100% - var(--space-lg) * 3) / 4); display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--tutor-pad) var(--tutor-pad) calc(var(--tutor-pad) * 2.1); border-radius: var(--radius-lg); background: var(--color-bg-page); color: var(--color-text-primary); }
+.tutor__media { position: relative; border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 391 / 372; }
+.tutor__media img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 25%; }
+.tutor__badge { position: absolute; right: clamp(12px, 1.146vw, 22px); top: clamp(12px, 0.99vw, 19px); }
+.tutor__name { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); text-align: center; }
+/* Факты чуть уже фото: 10 px с боков и 5 px сверху — как в макете */
+.tutor__facts { display: flex; flex-direction: column; gap: var(--tutor-pad); padding: 5px 10px 0; font-size: var(--font-body-s); line-height: var(--line-body-s); }
+/* в узкой карточке (1200–1300 px) стаж переносится под подпись, а не ломается на две строки */
+.tutor__row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--space-md); }
+.tutor__row--stack { flex-direction: column; align-items: flex-start; gap: 7px; }
+.tutor__facts dt { flex: none; font-weight: var(--fw-bold); }
+.tutor__facts dd { text-align: right; }
+.tutor__row--stack dd { text-align: left; }
+
+/* Галерея занятий — мозаика из макета сама бесконечно едет вправо. В ленте три
+   одинаковые мозаики: за цикл лента сдвигается ровно на одну и начинает заново
+   с того же кадра, поэтому склейки не видно. Под курсором останавливается */
+.gallery-band { --gallery-gap: 12px; --gallery-time: 45s; overflow: hidden; margin-inline: calc(50% - 50vw); }
+.gallery-track { display: flex; width: max-content; animation: gallery-run var(--gallery-time) linear infinite; }
+.gallery-band:hover .gallery-track { animation-play-state: paused; }
+@keyframes gallery-run { from { transform: translateX(calc(-100% / 3)); } to { transform: none; } }
+.no-js .gallery-track { animation: none; }
+/* без анимации ленту можно пролистать вручную */
+@media (prefers-reduced-motion: reduce) { .gallery-band { overflow-x: auto; } }
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(5, 15vw);
+  grid-auto-rows: 9.4vw;
+  grid-template-areas:
+    "a b c d e"
+    "f g c h i"
+    "f j j j k";
+  gap: var(--gallery-gap);
+  margin-right: var(--gallery-gap);   /* зазор между мозаиками: треть ленты — ровно одна мозаика с ним */
+}
+.gallery__pic { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); }
+.gallery__pic--a { grid-area: a; } .gallery__pic--b { grid-area: b; } .gallery__pic--c { grid-area: c; }
+.gallery__pic--d { grid-area: d; } .gallery__pic--e { grid-area: e; } .gallery__pic--f { grid-area: f; }
+.gallery__pic--g { grid-area: g; } .gallery__pic--h { grid-area: h; } .gallery__pic--i { grid-area: i; }
+.gallery__pic--j { grid-area: j; } .gallery__pic--k { grid-area: k; }
+
+@media (max-width: 1199px) {
+  .numbers { grid-template-columns: 1fr; gap: var(--space-2xl); }
+  .licences { grid-template-columns: 1fr; padding: var(--space-3xl); }
+  .licences__docs img { height: 320px; }
+  .useful { grid-template-columns: 1fr; padding: var(--space-2xl); gap: var(--space-xl); }
+  .tutor { flex-basis: 270px; }
+  .gallery-band { --gallery-time: 40s; }
+  .gallery { grid-template-columns: repeat(5, 23vw); grid-auto-rows: 14.4vw; }
+  .logos--wall img { height: 84px; max-width: 200px; }
+}
+@media (max-width: 767px) {
+  .number { min-height: 0; padding: var(--space-lg); gap: var(--space-md); }
+  .number__pic { width: 72px; }
+  .licences { padding: var(--space-2xl) var(--space-lg); gap: var(--space-xl); }
+  .licences__docs img { height: 206px; }
+  .useful { padding: var(--space-xl) var(--space-lg); }
+  .useful__stats { grid-template-columns: 1fr; gap: var(--space-lg); }
+  .jobs-head .btn { width: 100%; }
+  .logos--wall img { height: 48px; max-width: 120px; }
+  .tutors-band__title { text-align: left; }
+  .tutor { flex-basis: 80vw; }
+  .gallery-band { --gallery-gap: 8px; --gallery-time: 30s; }
+  .gallery { grid-template-columns: repeat(5, 44vw); grid-auto-rows: 27.6vw; }
+}
+
+/* ---------- Трудоустройство (employment.html) — макет в ките 1362-6282 ---------- */
+/* Подложка секции: серая или тёмная, поля 60, скругление 25 */
+.jobs-panel { display: flex; flex-direction: column; gap: var(--space-3xl); padding: var(--space-4xl); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.jobs-panel--dark { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+
+/* Бирюзовый кружок с иконкой: 48 px в карточках, 24 px в списке цифр */
+.icon-badge { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--color-bg-accent); color: var(--color-text-primary); }
+.icon-badge--s { width: 24px; height: 24px; }
+.icon-badge--s .icon { width: 16px; height: 16px; }
+
+/* Первый экран: фото с тёмным градиентом, слева текст, справа обложка инструкции */
+.jobs-hero { position: relative; display: flex; align-items: center; gap: var(--space-4xl); padding: var(--space-4xl); border-radius: var(--radius-lg); overflow: hidden; isolation: isolate; color: var(--color-text-inverse); }
+.jobs-hero__bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.jobs-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(28, 38, 59, .92), rgba(28, 38, 59, .7) 50%, rgba(28, 38, 59, .35)); }
+.jobs-hero__copy { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-xl); }
+.jobs-hero__title { font-size: var(--font-h1); line-height: var(--line-h1); font-weight: var(--fw-bold); letter-spacing: -0.5px; }
+.jobs-hero__lead { font-size: var(--font-body-l); line-height: var(--line-body-l); }
+.jobs-guide { flex: none; width: min(600px, 40%); display: flex; flex-direction: column; gap: var(--space-md); }
+.jobs-guide__cover { position: relative; display: grid; place-items: center; aspect-ratio: 600 / 365; border-radius: var(--radius-md); overflow: hidden; background: var(--gradient-guide); }
+.jobs-guide__cover .logo { position: relative; z-index: 1; }
+/* Контуры шестиугольников уходят за правый нижний край, как в макете */
+.jobs-guide__hex { position: absolute; width: 44.5%; height: auto; pointer-events: none; }
+.jobs-guide__hex--1 { left: 60%; top: 51.6%; }
+.jobs-guide__hex--2 { left: 49.1%; top: 62%; }
+.jobs-guide__caption { font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-bold); }
+
+/* «Что мы предлагаем партнёрам»: фото-карточки, тёмный градиент сверху под заголовок */
+.offers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
+.offer-card { position: relative; display: flex; flex-direction: column; min-height: clamp(320px, 22.19vw, 426px); padding: var(--space-card); border-radius: var(--radius-md); overflow: hidden; isolation: isolate; color: var(--color-text-inverse); }
+.offer-card > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.offer-card::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(28, 38, 59, .85), rgba(28, 38, 59, .35) 55%, rgba(28, 38, 59, .05)); }
+.offer-card__head { display: flex; align-items: center; gap: var(--space-lg); }
+.offer-card__title { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
+
+/* «Как оставить заявку»: шаги слева, фото справа во всю высоту текста */
+.jobs-steps { display: grid; grid-template-columns: minmax(0, 1fr) 600px; gap: var(--space-4xl); }
+.jobs-steps__text { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2xl); }
+.steps { display: flex; flex-direction: column; gap: var(--space-lg); }
+.steps li { display: flex; align-items: center; gap: var(--space-lg); font-size: var(--font-body-m); line-height: var(--line-body-m); color: var(--color-text-secondary); }
+.steps__num { flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: var(--radius-sm); background: var(--color-bg-accent); color: var(--color-text-on-accent); font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
+.jobs-steps__note { font-size: var(--font-body-m); line-height: var(--line-body-m); color: var(--color-text-secondary); }
+.jobs-steps__photo { border-radius: var(--radius-md); overflow: hidden; }
+.jobs-steps__photo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* «Преимущества сотрудничества»: большая фото-карточка + две белые */
+.advantages { display: grid; grid-template-columns: minmax(0, 1fr) 600px; gap: var(--space-lg); }
+.advantages__col { display: grid; grid-template-rows: 1fr 1fr; gap: var(--space-lg); }
+.advantage { display: flex; flex-direction: column; justify-content: center; padding: var(--space-4xl); border-radius: var(--radius-md); background: var(--color-bg-page); color: var(--color-text-primary); }
+.advantage--photo { position: relative; justify-content: flex-start; min-height: clamp(380px, 28.13vw, 540px); overflow: hidden; isolation: isolate; background: none; }
+.advantage--photo > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.advantage--photo::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .8) 35%, rgba(255, 255, 255, 0) 80%); }
+.advantage__head { display: flex; align-items: center; gap: var(--space-lg); max-width: 520px; }
+.advantage__title { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); }
+
+/* «Мы — международный центр»: фото, градиент к низу, цифры в две колонки.
+   Общий блок «Трудоустройства» и «О нас» (там он первый, под хлебными крошками) */
+.jobs-center { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-3xl); min-height: clamp(420px, 29.17vw, 560px); padding: var(--space-4xl); border-radius: var(--radius-lg); overflow: hidden; isolation: isolate; color: var(--color-text-inverse); }
+.jobs-center__bg { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; }
+.jobs-center::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(28, 38, 59, .6), rgba(28, 38, 59, .45) 45%, rgba(28, 38, 59, .92)); }
+.jobs-center__title { max-width: 1000px; font-size: var(--font-display); line-height: var(--line-display); letter-spacing: -1px; }
+.jobs-center__facts { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-sm) 120px; }
+.checklist { display: flex; flex-direction: column; gap: var(--space-sm); }
+.checklist li { display: flex; align-items: center; gap: var(--space-md); font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); }
+.checklist--inverse li { color: var(--color-text-inverse); }
+
+/* «9 причин»: сетка 4×2, первая карточка бирюзовая, последняя тёмная */
+.reasons-count { color: var(--color-text-accent); font-size: var(--font-display); line-height: 1; letter-spacing: -1px; }
+.reasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-lg); }
+.reason { display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--space-card); border-radius: var(--radius-md); background: var(--color-bg-surface); }
+.reason__icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: var(--radius-sm); background: var(--color-bg-accent); }
+.reason__icon img { width: 48px; height: 48px; }
+.reason__body { display: flex; flex-direction: column; gap: var(--space-sm); }
+.reason__title { font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-bold); }
+.reason__text { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-secondary); }
+.reason__text b { font-weight: var(--fw-semibold); }
+.reason--accent { background: var(--color-bg-accent); }
+.reason--accent .reason__icon { background: var(--color-bg-page); }
+.reason--accent .reason__text { color: var(--color-text-on-accent); }
+.reason--dark { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.reason--dark .reason__text { color: var(--color-text-inverse); }
+
+/* «Как проходит обучение» + «Учебные материалы»: две колонки в серой подложке */
+.jobs-learn { flex-direction: row; gap: var(--space-4xl); }
+.jobs-learn__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-xl); }
+.jobs-learn__sub { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-medium); }
+.jobs-learn__text { font-size: var(--font-body-m); line-height: var(--line-body-m); color: var(--color-text-secondary); }
+/* Фирменный значок RuStore из кита (App Badge / RuStore, Dark) */
+.store-badge-img { display: inline-block; border-radius: 6px; transition: transform var(--dur-fast) var(--ease-out); }
+.store-badge-img:hover { transform: translateY(-2px); }
+.store-badge-img img { width: 172px; height: 61px; }
+.jobs-learn__phone { align-self: stretch; display: flex; justify-content: flex-end; }
+.jobs-learn__phone img { width: min(520px, 100%); height: auto; }
+
+/* Видео-обложка с кнопкой play по центру (платформа и видеоотзывы) */
+.video-card { position: relative; display: grid; place-items: center; width: 100%; border-radius: var(--radius-md); overflow: hidden; isolation: isolate; cursor: pointer; }
+.video-card > img { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease-out); }
+.video-card .play { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-page); transition: transform var(--dur-base) var(--ease-out); }
+.video-card:hover > img { transform: scale(1.04); }
+.video-card:hover .play { transform: scale(1.1); }
+.video-card--platform { aspect-ratio: 726 / 343; }
+.video-card--platform .play { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.jobs-videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
+.jobs-videos .video-card { aspect-ratio: 531 / 325; }
+
+@media (max-width: 1199px) {
+  .jobs-hero { flex-direction: column; align-items: stretch; padding: var(--space-3xl); }
+  .jobs-guide { width: min(100%, 480px); }
+  .jobs-panel { padding: var(--space-3xl); }
+  .offers { grid-template-columns: 1fr; }
+  .offer-card { min-height: 260px; }
+  .jobs-steps { grid-template-columns: 1fr; }
+  .jobs-steps__photo { height: clamp(220px, 40vw, 420px); }
+  .advantages { grid-template-columns: 1fr; }
+  .advantage--photo { min-height: 340px; }
+  .jobs-center { min-height: 0; }
+  .jobs-center__facts { gap: var(--space-sm) var(--space-4xl); }
+  .reasons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .jobs-learn { flex-direction: column; }
+}
+@media (max-width: 767px) {
+  .jobs-hero { padding: var(--space-2xl) var(--space-lg); }
+  .jobs-hero .btn, .jobs-steps .btn { width: 100%; }
+  .jobs-panel { padding: var(--space-2xl) var(--space-lg); }
+  .offer-card { min-height: 220px; padding: var(--space-lg); }
+  .icon-badge { width: 40px; height: 40px; }
+  .icon-badge--s { width: 24px; height: 24px; }
+  .steps__num { width: 44px; height: 44px; }
+  .advantage { padding: var(--space-2xl) var(--space-lg); }
+  .advantage--photo { min-height: 280px; }
+  /* на узком экране градиент сверху вниз — заголовок остаётся на светлом */
+  .advantage--photo::before { background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .8) 35%, rgba(255, 255, 255, 0) 80%); }
+  .jobs-center { padding: var(--space-2xl) var(--space-lg); }
+  .jobs-center__title { font-size: var(--font-h1); line-height: var(--line-h1); letter-spacing: -0.5px; }
+  .reasons { grid-template-columns: 1fr; }
+  .reason { padding: var(--space-lg); }
+  .jobs-videos { grid-template-columns: 1fr; }
+}

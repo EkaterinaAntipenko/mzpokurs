@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-c", "import os, sys, runpy; sys.argv = ['http.server', os.environ.get('PORT', '8765')]; runpy.run_module('http.server', run_name='__main__')"],
+      "port": 8765,
+      "autoPort": true
+    }
+  ]
+}
