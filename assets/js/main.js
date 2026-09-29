@@ -68,7 +68,7 @@
   }
 
   /* ---------- Якорные ссылки: цель по центру экрана, с учётом закреплённой шапки ---------- */
-  function scrollToTarget(el) {
+  function targetY(el) {
     var top = topHeight();
     var r = el.getBoundingClientRect();
     var free = window.innerHeight - top;
@@ -76,7 +76,41 @@
     // Нужна длинным блокам (карточки курсов): по центру у них видна середина, а не начало.
     var bias = parseFloat(el.getAttribute('data-scroll-bias')) || 0;
     var y = window.scrollY + r.top - top - Math.max(16, (free - r.height) / 2 - free * bias);
-    window.scrollTo({ top: Math.max(0, y), behavior: reduceMotion ? 'auto' : 'smooth' });
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    return Math.max(0, Math.min(y, max));
+  }
+  // Своя плавная прокрутка вместо behavior: 'smooth' (заказчик, 29.09: «К тарифам» слишком резко).
+  // Браузерная на длинном пути (до тарифов ~7000 px) разгоняется до ~22 000 px/с и резко встаёт.
+  // Здесь длительность растёт с расстоянием (0,5–1,8 с), кривая smootherstep: мягкий разгон
+  // и мягкая остановка, пик скорости втрое ниже. Колесо, касание, клавиши — прокрутка отдаётся посетителю.
+  var scrollStop = null;
+  function scrollToTarget(el) {
+    if (scrollStop) scrollStop();
+    var html = document.documentElement;
+    // пока идёт своя прокрутка, CSS scroll-behavior: smooth выключен — иначе браузер сглаживает каждый шаг
+    html.style.scrollBehavior = 'auto';
+    var start = window.scrollY, dist = Math.abs(targetY(el) - start);
+    if (reduceMotion || dist < 2) { window.scrollTo(0, targetY(el)); html.style.scrollBehavior = ''; return; }
+    var dur = Math.min(1800, Math.max(500, 350 + dist * 0.2));
+    var t0 = null, frame = 0;
+    var stops = ['wheel', 'touchstart', 'keydown', 'mousedown'];
+    var stop = function () {
+      window.cancelAnimationFrame(frame);
+      stops.forEach(function (ev) { window.removeEventListener(ev, stop); });
+      html.style.scrollBehavior = '';
+      scrollStop = null;
+    };
+    var step = function (now) {
+      if (t0 === null) t0 = now;
+      var p = Math.min(1, (now - t0) / dur);
+      var k = p * p * p * (p * (p * 6 - 15) + 10);
+      window.scrollTo(0, start + (targetY(el) - start) * k);   // цель пересчитывается: на пути могут догрузиться картинки
+      if (p < 1) frame = window.requestAnimationFrame(step);
+      else stop();
+    };
+    stops.forEach(function (ev) { window.addEventListener(ev, stop, { passive: true }); });
+    scrollStop = stop;
+    frame = window.requestAnimationFrame(step);
   }
   document.addEventListener('click', function (e) {
     var a = e.target.closest('a[href^="#"]');
@@ -96,24 +130,45 @@
 
   /* ---------- Overlays: drawer menu, filters, modal ---------- */
   var lastFocus = null;
+  // слои с затемнением: меню, окна, фильтры каталога и расписания (на телефоне — окна)
+  var LAYERS = '.drawer, .modal, .catalog__filters, .sched-filters__layer';
+  var OPEN_LAYERS = LAYERS.split(', ').map(function (s) { return s + '.is-open'; }).join(', ');
+  var TOUCH = window.matchMedia('(hover: none)');
+  // Под открытым окном страница не прокручивается (overflow: hidden). На компьютере при этом
+  // пропадает полоса прокрутки, страница становится шире на её ширину, и вся вёрстка
+  // перестраивается — фон дёргается. Пока окно открыто, возвращаем эту ширину отступом справа.
+  function lockScroll() {
+    if (document.body.classList.contains('is-locked')) return;
+    var bar = window.innerWidth - document.documentElement.clientWidth;
+    if (bar > 0) document.body.style.paddingRight = bar + 'px';
+    document.body.classList.add('is-locked');
+  }
+  function unlockScroll() {
+    document.body.classList.remove('is-locked');
+    document.body.style.paddingRight = '';
+  }
   function openLayer(el) {
     if (!el) return;
     lastFocus = document.activeElement;
     el.classList.add('is-open');
     el.removeAttribute('aria-hidden');
-    document.body.classList.add('is-locked');
-    // окно фильтров: фокус на «Закрыть», а не в поле цены — иначе на телефоне сразу выскакивает клавиатура
-    var focusable = el.hasAttribute('data-no-autofocus') ? $('button[data-close]', el)
-      : ($('input:not([type=checkbox])', el) || $('button, a, input, select', el));
-    if (focusable) setTimeout(function () { focusable.focus(); }, 50);
+    lockScroll();
+    // Фокус на «Закрыть», а не в поле: у окон фильтров всегда, у остальных окон — на телефоне.
+    // Иначе сразу выскакивает клавиатура, и окно со страницей под ним прыгают.
+    // Поиск (data-autofocus) — исключение: там сразу печатают.
+    var noField = el.hasAttribute('data-no-autofocus') || (TOUCH.matches && !el.hasAttribute('data-autofocus'));
+    var focusable = (noField && $('button[data-close]', el))
+      || $('input:not([type=checkbox])', el) || $('button, a, input, select', el);
+    if (focusable) setTimeout(function () { focusable.focus({ preventScroll: true }); }, 50);
   }
   function closeLayer(el) {
     if (!el) return;
     el.classList.remove('is-open');
-    // колонка фильтров на компьютере остаётся на экране — от скринридеров её не прячем
-    if (!(el.classList.contains('catalog__filters') && window.matchMedia('(min-width: 1200px)').matches)) el.setAttribute('aria-hidden', 'true');
-    if (!$('.drawer.is-open, .modal.is-open, .catalog__filters.is-open')) document.body.classList.remove('is-locked');
-    if (lastFocus) lastFocus.focus();
+    // прячем от скринридеров только окна; фильтры, которые на этой ширине стоят на странице
+    // (колонка каталога на компьютере, полоса расписания), остаются доступными
+    if (getComputedStyle(el).position === 'fixed') el.setAttribute('aria-hidden', 'true');
+    if (!$(OPEN_LAYERS)) unlockScroll();
+    if (lastFocus) lastFocus.focus({ preventScroll: true });
   }
   $$('[data-open]').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
@@ -124,11 +179,13 @@
   });
   $$('[data-close]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      closeLayer(btn.closest('.drawer, .modal, .catalog__filters'));
+      // «Показать курсы/группы» на компьютере — не окно: закрывать нечего, фокус не трогаем
+      var layer = btn.closest(LAYERS);
+      if (layer && layer.classList.contains('is-open')) closeLayer(layer);
       $$('[data-open][aria-expanded="true"]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
     });
   });
-  function closeOpenLayers() { $$('.drawer.is-open, .modal.is-open, .catalog__filters.is-open').forEach(closeLayer); }
+  function closeOpenLayers() { $$(OPEN_LAYERS).forEach(closeLayer); }
 
   /* ---------- Меню на телефоне: «Каталог курсов» и «Расписание» раскрываются ---------- */
   $$('.drawer__toggle').forEach(function (btn) {
@@ -240,7 +297,9 @@
           '<h3 class="search-card__title">' + (c.h ? '<a href="' + esc(c.h) + '">' + title + '</a>' : title) + '</h3>' +
           (c.m ? '<p class="search-card__meta">' + esc(c.m) + '</p>' : '') +
         '</div>' + price +
-        '<a class="btn btn--primary btn--m search-card__btn" role="button" tabindex="0" data-popup="lead" data-popup-title="Записаться на курс">Записаться</a>' +
+        // «Подробнее» — на страницу курса (h из индекса); страницы нет — кнопка неактивна
+        (c.h ? '<a class="btn btn--primary btn--m search-card__btn" href="' + esc(c.h) + '">Подробнее</a>'
+             : '<span class="btn btn--primary btn--m search-card__btn is-disabled" aria-disabled="true">Подробнее</span>') +
       '</article>';
     }
 
@@ -565,11 +624,17 @@
         if (!entry.isIntersecting) return;
         var el = entry.target, target = parseFloat(el.getAttribute('data-count')), start = null;
         var pre = el.getAttribute('data-prefix') || '', suf = el.getAttribute('data-suffix') || '';
+        // Число внутри фразы (.count-inline, «350 000+ специалистов уже…»): пока оно растёт, его
+        // ширина меняется и текст рядом дёргается. Держим место под итоговое число — в разметке
+        // уже оно; цифры одной ширины и число прижато вправо (CSS). Досчитало — ширину отпускаем.
+        var inline = el.classList.contains('count-inline');
+        if (inline) el.style.width = el.getBoundingClientRect().width + 'px';
         var tick = function (t) {
           if (!start) start = t;
           var p = Math.min(1, (t - start) / 1400), eased = 1 - Math.pow(1 - p, 3);
           el.textContent = pre + formatNum(target * eased) + suf;
           if (p < 1) window.requestAnimationFrame(tick);
+          else if (inline) el.style.width = '';
         };
         window.requestAnimationFrame(tick);
         co.unobserve(el);
@@ -601,10 +666,26 @@
   var modal = document.getElementById('modal-success');
   function setError(field, on) { if (field) field.classList.toggle('is-error', on); }
   $$('form[data-lead]').forEach(function (form) {
-    var consent = $('input[name="consent"]', form);
-    var submit = $('[type="submit"]', form);
-    var sync = function () { if (consent && submit) submit.classList.toggle('is-disabled', !consent.checked); };
-    if (consent) { consent.addEventListener('change', sync); sync(); }
+    // form.elements — вместе с кнопками вне формы (атрибут form, нижняя панель оформления на телефоне)
+    var submits = [].filter.call(form.elements, function (el) { return el.type === 'submit'; });
+    var inputs = [].filter.call(form.elements, function (el) { return el.tagName === 'INPUT'; });
+    // Кнопка отправки активна, только когда во всех полях что-то написано и стоит галочка согласия
+    // (заказчик, 29.09). «+7 (» маска подставляет сама — это ещё не ввод.
+    var filled = function (input) {
+      if (input.type === 'checkbox') return input.checked;
+      if (input.type === 'tel') return input.value.replace(/\D/g, '').length > 1;
+      return input.value.trim().length > 0;
+    };
+    var sync = function () {
+      var ready = inputs.every(filled);
+      submits.forEach(function (btn) {
+        btn.classList.toggle('is-disabled', !ready);
+        btn.setAttribute('aria-disabled', ready ? 'false' : 'true');
+      });
+    };
+    form.addEventListener('input', sync);
+    form.addEventListener('change', sync);
+    sync();
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -612,6 +693,7 @@
       $$('[required]', form).forEach(function (input) {
         var field = input.closest('.field');
         var valid = input.type === 'tel' ? input.value.replace(/\D/g, '').length === 11 : input.value.trim().length > 1;
+        if (input.type === 'email') valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
         if (input.type === 'checkbox') valid = input.checked;
         setError(field, !valid);
         if (!valid && ok) { input.focus(); ok = false; }
@@ -664,10 +746,9 @@
     });
   });
 
-  /* ---------- «Как МЦПО помогает…» на телефоне: вертикальный слайдер ---------- */
+  /* ---------- «Как МЦПО помогает…» на телефоне: карточка в фокусе крупнее ---------- */
   // Карточка у середины экрана в полный размер, остальные уменьшены и приглушены;
-  // при прокрутке фокус плавно переходит на следующую. Страница мягко прилипает
-  // к карточкам (scroll-snap proximity в CSS), поэтому листается по одной.
+  // при прокрутке фокус плавно переходит на следующую. Прокрутка обычная, без прилипания.
   (function () {
     var list = $('[data-focus-list]');
     if (!list || reduceMotion) return;
@@ -689,7 +770,6 @@
     function request() { if (!queued) { queued = true; requestAnimationFrame(paint); } }
     function setup() {
       list.classList.toggle('is-focus', mq.matches);
-      doc.classList.toggle('has-focus-snap', mq.matches);
       if (mq.matches) paint();
       else cards.forEach(function (c) { c.style.transform = ''; c.style.opacity = ''; });
     }
@@ -730,6 +810,109 @@
     filters.addEventListener('change', countChecked);
     countChecked();
   }
+
+  /* ---------- Расписание и страница преподавателя: список курсов слева ----------
+     Каждый пункт прокручивает к графику своего курса (#c0…, общий обработчик якорей выше);
+     выделен курс, чей график сейчас посередине экрана. */
+  $$('.course-list').forEach(function (list) {
+    var links = $$('a[href^="#"]', list);
+    var targets = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+    function mark(k) { links.forEach(function (a, i) { if (i === k) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); }); }
+    links.forEach(function (a, i) { a.addEventListener('click', function () { mark(i); }); });
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) mark(targets.indexOf(e.target)); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    targets.forEach(function (t) { if (t) io.observe(t); });
+  });
+
+  /* ---------- График курса: «Показать ещё даты» раскрывает ещё 3 даты, «Свернуть» — прячет ---------- */
+  $$('[data-more-dates]').forEach(function (btn) {
+    var card = btn.closest('.sched-course');
+    var extra = card ? $$('tr[data-extra]', card) : [];
+    if (!extra.length) { btn.hidden = true; return; }
+    btn.addEventListener('click', function () {
+      var open = btn.getAttribute('aria-expanded') !== 'true';
+      extra.forEach(function (tr, i) { tr.style.setProperty('--i', i); tr.hidden = !open; });
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.textContent = open ? 'Свернуть' : 'Показать ещё даты';
+    });
+  });
+
+  /* ---------- «Есть промокод?»: по нажатию — поле ввода с кнопкой-стрелкой ----------
+     Ссылка уступает место полю (анимация в pages.css), курсор сразу в поле. Проверку промокода
+     сделает бэкенд — пока стрелка только возвращает в пустое поле. */
+  $$('[data-promo-toggle]').forEach(function (link) {
+    var form = document.getElementById(link.getAttribute('aria-controls'));
+    if (!form) return;
+    var input = $('input', form);
+    link.addEventListener('click', function () {
+      link.setAttribute('aria-expanded', 'true');
+      link.hidden = true;
+      form.hidden = false;
+      if (input) input.focus({ preventScroll: true });
+    });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (input && !input.value.trim()) input.focus();
+    });
+  });
+
+  /* ---------- Оформление, шаг 1: календарь старта очной группы ----------
+     Выбрали «Очно в Москве» — вместо текста под формами обучения появляется календарь
+     (месяц → дата → время). Формат, старт и цена сразу видны в заказе справа, в строке над
+     шагом (телефон) и в нижней панели. */
+  $$('[data-start-picker]').forEach(function (picker) {
+    var step = picker.closest('.checkout__step') || document;
+    var note = $('[data-format-note]', step);
+    var formats = $$('input[name="format"]', step);
+    var months = $$('[data-month]', picker), groups = $$('[data-month-days]', picker);
+    var arrows = $$('[data-month-step]', picker);
+    var cur = 0;
+    function setText(sel, text) { $$(sel).forEach(function (el) { el.textContent = text; }); }
+    function value(name) { var r = $('input[name="' + name + '"]:checked', picker); return r ? r.value : ''; }
+    function update() {
+      var f = formats.filter(function (r) { return r.checked; })[0];
+      if (!f) return;
+      var offline = f.value === 'offline';
+      picker.hidden = !offline;
+      if (note) note.hidden = offline;
+      var name = $('.format-option__name', f.closest('label')).textContent;
+      var price = f.getAttribute('data-price');
+      var start = offline ? value('start-date') + ', ' + value('start-time') : f.getAttribute('data-start');
+      setText('[data-order-format]', name);
+      setText('[data-order-start]', start);
+      setText('[data-order-total]', price);
+      setText('[data-order-pay]', 'Оплатить ' + price);
+      setText('[data-order-line]', name + ' · старт ' + start + ' · ' + price);
+    }
+    function showMonth(i) {
+      cur = Math.max(0, Math.min(months.length - 1, i));
+      months.forEach(function (b, k) { b.classList.toggle('is-active', k === cur); b.setAttribute('aria-pressed', k === cur ? 'true' : 'false'); });
+      groups.forEach(function (g, k) { g.hidden = k !== cur; });
+      // у дат общее имя: в другом месяце выбираем его первую дату, иначе в заказе осталась бы скрытая
+      var shown = groups[cur];
+      if (shown && !$('input:checked', shown)) { var first = $('input', shown); if (first) first.checked = true; }
+      arrows.forEach(function (b) { var s = +b.getAttribute('data-month-step'); b.disabled = s < 0 ? cur === 0 : cur === months.length - 1; });
+      update();
+    }
+    months.forEach(function (b, k) { b.addEventListener('click', function () { showMonth(k); }); });
+    arrows.forEach(function (b) { b.addEventListener('click', function () { showMonth(cur + (+b.getAttribute('data-month-step'))); }); });
+    formats.forEach(function (r) { r.addEventListener('change', update); });
+    picker.addEventListener('change', update);
+    showMonth(0);
+  });
+
+  /* ---------- Фильтры каталога на компьютере: колонка слева, по умолчанию скрыта ----------
+     Кнопка «Фильтры» над курсами показывает и прячет её; на планшете и телефоне вместо этой
+     кнопки видна другая, с data-open, — она открывает окно фильтров */
+  $$('[data-filters-toggle]').forEach(function (btn) {
+    var catalog = btn.closest('.catalog');
+    btn.addEventListener('click', function () {
+      var open = catalog.classList.toggle('is-filters-open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
 
   /* ---------- Каталог на телефоне: список направлений вместо ряда вкладок ---------- */
   $$('[data-dir-select]').forEach(function (sel) {
@@ -785,23 +968,38 @@
     slider.style.setProperty('--hero-interval', interval + 'ms');
     var i = 0, timer = null, started = 0, left = interval;
     imgs.forEach(function (im) { im.loading = 'eager'; });
+    // «Отдаление» картинки (см. .hero-slider__img в components.css): длится интервал + затухание,
+    // чтобы уходящая картинка доезжала, пока гаснет. Web Animations API — движение в композиторе,
+    // перезапуск без сброса стилей и пересчёта раскладки.
+    var FADE = 900, zooms = [];
+    function zoom(k) {
+      var pic = imgs[k];
+      if (!pic || reduceMotion || !pic.animate) return;
+      if (zooms[k]) zooms[k].cancel();      // картинка сейчас невидима — сброс в начало не заметен
+      zooms[k] = pic.animate([{ transform: 'scale(1.07)' }, { transform: 'scale(1)' }],
+        { duration: interval + FADE, easing: 'linear', fill: 'forwards' });
+    }
     function show(k) {
+      zoom(k);
       [imgs, texts, segs].forEach(function (list) { list.forEach(function (el, j) { el.classList.toggle('is-active', j === k); }); });
       texts.forEach(function (t, j) { if (j === k) t.removeAttribute('aria-hidden'); else t.setAttribute('aria-hidden', 'true'); });
       // перезапуск анимации заполнения
       var bar = segs[k] && segs[k].querySelector('i');
       if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
-      // то же для наезда: на втором круге класс вешается на уже показанный кадр,
-      // и без сброса анимация не запустилась бы заново
-      var pic = imgs[k];
-      if (pic) { pic.style.animation = 'none'; void pic.offsetWidth; pic.style.animation = ''; }
     }
     function schedule(ms) { clearTimeout(timer); started = Date.now(); left = ms; timer = setTimeout(next, ms); }
     function next() { i = (i + 1) % n; show(i); schedule(interval); }
-    function pause() { if (!timer) return; clearTimeout(timer); timer = null; left = Math.max(0, left - (Date.now() - started)); slider.classList.add('is-paused'); }
-    function resume() { if (timer) return; slider.classList.remove('is-paused'); schedule(left); }
+    function pause() {
+      if (!timer) return; clearTimeout(timer); timer = null; left = Math.max(0, left - (Date.now() - started)); slider.classList.add('is-paused');
+      zooms.forEach(function (a) { if (a && a.playState === 'running') a.pause(); });
+    }
+    function resume() {
+      if (timer) return; slider.classList.remove('is-paused'); schedule(left);
+      zooms.forEach(function (a) { if (a && a.playState === 'paused') a.play(); });
+    }
     document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); else resume(); });
     if (isStatic) return;
+    zoom(0);
     schedule(interval);
   });
 
@@ -1020,12 +1218,15 @@
     mega.addEventListener('mouseleave', closeSoon);
     // по клику уходим на страницу каталога — убираем панель сразу, без затухания,
     // иначе она попадает в снимок перехода между страницами
-    trigger.addEventListener('click', function () {
+    function hideNow() {
       clearTimeout(timer);
       mega.classList.remove('is-open');
       mega.hidden = true;
       trigger.setAttribute('aria-expanded', 'false');
-    });
+    }
+    trigger.addEventListener('click', hideNow);
+    // по ссылке из панели (раздел, курс) тоже уходим со страницы
+    mega.addEventListener('click', function (e) { if (e.target.closest('a.mega__item[href]')) hideNow(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !mega.hidden) close(); });
     // уводим фокус за пределы меню — закрываем
     root.addEventListener('focusout', function (e) { if (!root.contains(e.relatedTarget)) close(); });
@@ -1042,6 +1243,29 @@
       if (sel.options[i].value === want) { sel.selectedIndex = i; return; }
     }
   })();
+
+  /* ---------- Расписание на телефоне: направление в строке, остальные фильтры в окне ---------- */
+  // Список направлений в строке — копия поля из полосы фильтров (оно на телефоне в окне скрыто),
+  // значения синхронизированы. На значке — сколько фильтров в окне изменено, при нуле кружка нет.
+  $$('[data-sched-filters]').forEach(function (form) {
+    var dir = $('[data-filter-direction]', form), mirror = $('[data-dir-mirror]', form);
+    var value = $('[data-dir-value]', form), badge = $('[data-sched-count]', form), btn = $('.filter-btn', form);
+    var layer = $('.sched-filters__layer', form);
+    function sync() {
+      if (dir && mirror) mirror.value = dir.value;
+      if (dir && value) value.textContent = dir.options[dir.selectedIndex].text;
+      var k = 0;
+      $$('select', layer).forEach(function (s) { if (s !== dir && s.selectedIndex > 0) k++; });
+      $$('input', layer).forEach(function (i) { if (i.value !== '') k++; });
+      if (badge) { badge.textContent = k; badge.hidden = k === 0; }
+      if (btn) btn.setAttribute('aria-label', k ? 'Фильтры, изменено ' + k : 'Фильтры');
+    }
+    if (dir && mirror) mirror.addEventListener('change', function () { dir.value = mirror.value; });
+    form.addEventListener('change', sync);
+    form.addEventListener('input', sync);
+    form.addEventListener('reset', function () { setTimeout(sync, 0); });
+    sync();
+  });
 
   /* ---------- Обратный отсчёт до конца акции ---------- */
   (function () {

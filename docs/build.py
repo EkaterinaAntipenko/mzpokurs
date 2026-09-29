@@ -73,6 +73,8 @@ SEARCH_DIRECTIONS = ["Медицинская подготовка", "Аккре�
 
 # Готовые страницы. Ссылки на всё остальное рендерятся как неактивные (без href, без hover).
 READY_FACULTY = "Массаж и реабилитация"
+# Страница курса сделана одна — «Классический массаж с нуля». По просьбе заказчика (29.09) на неё
+# ведут все переходы в карточку курса: карточки, мегаменю, поиск, расписание, корзина.
 READY_COURSE = "course-classic-massage.html"
 # Куда ведут направления из меню, подвала и плиток. Остальные — заглушки.
 FAC_LINKS = {"Массаж и реабилитация": "faculty-massage.html",
@@ -239,7 +241,7 @@ def mega_menu():
                 f'<li><a class="mega__item{dact}" href="#" data-dir="{fid}.{did}" data-img="{dimg}">'
                 f'<span>{dname}</span>{icon("chevron-right","icon icon--xs")}</a></li>')
             c_items = "".join(
-                f'<li><a class="mega__item" href="#" data-img="{cimg}"><span>{cname}</span></a></li>'
+                f'<li><a class="mega__item" href="{READY_COURSE}" data-img="{cimg}"><span>{cname}</span></a></li>'
                 for cname, cimg in courses)
             cshow = " is-shown" if (fi == 0 and di == 0) else ""
             course_cols.append(f'<ul class="mega__list{cshow}" data-courses="{fid}.{did}" role="list">{c_items}</ul>')
@@ -335,7 +337,7 @@ def header(active=""):
       <p class="t-body-s t-muted">{ADDR}<br>Пн–Пт 9:00–20:00, Сб–Вс 10:00–16:00</p>
     </div>
   </div>
-  <div class="modal modal--search" id="modal-search" aria-hidden="true" data-search-index="{versioned("assets/js/search-index.js")}">
+  <div class="modal modal--search" id="modal-search" aria-hidden="true" data-autofocus data-search-index="{versioned("assets/js/search-index.js")}">
     <div class="modal__overlay" data-close></div>
     <div class="modal__dialog search-modal" role="dialog" aria-modal="true" aria-label="Поиск по сайту">
       <div class="search-modal__head">
@@ -377,7 +379,20 @@ def consent(dark=False, rules=False):
     # rules — формулировка блока «Остались вопросы?» из макета, со ссылкой на правила Платформы
     text = ('Соглашаюсь на <a href="#">обработку персональных данных</a> и с <a href="#">правилами пользования Платформой</a>.'
             if rules else 'Согласен(на) на <a href="#">обработку персональных данных</a>')
-    return f'''<label class="check"><input type="checkbox" name="consent" required checked><span class="check__box"></span><span>{text}</span></label>'''
+    # галочки по умолчанию нет (заказчик, 29.09): согласие ставят сами. Кнопка отправки бледная, пока не заполнены
+    # все поля формы и не стоит галочка (main.js), поэтому необязательных полей в формах заявки нет
+    return f'''<label class="check"><input type="checkbox" name="consent" required><span class="check__box"></span><span>{text}</span></label>'''
+
+# Приложение в магазинах: официальные значки RuStore и App Store (assets/icons).
+# Настоящих ссылок пока нет — на живом сайте их тоже нет; «#» сборка делает неактивным.
+RUSTORE_URL = "#"
+APPSTORE_URL = "#"
+
+def store_badges():
+    return ('<div class="store-badges">'
+            f'<a class="store-badge-img store-badge-img--rustore" href="{RUSTORE_URL}"><img src="assets/icons/rustore-badge.svg" alt="Скачайте из RuStore" width="111" height="40"></a>'
+            f'<a class="store-badge-img store-badge-img--appstore" href="{APPSTORE_URL}"><img src="assets/icons/appstore-badge.svg" alt="Загрузите в App Store" width="214" height="72"></a>'
+            '</div>')
 
 def footer():
     fac = ["Медицинская подготовка","Аккредитация медработников","Курсы НМО для врачей","Косметология","Массаж и реабилитация","Диетология","Здоровье и развитие ребёнка","Парикмахерское искусство","Бухгалтерский учёт и кадры","Менеджмент"]
@@ -392,7 +407,7 @@ def footer():
         </div>
         <form class="footer__form on-dark" data-lead novalidate>
           {field("text","name","Имя*")}
-          <div class="row">{field("tel","phone")}{field("text","spec","Ваша специальность",False)}</div>
+          <div class="row">{field("tel","phone")}{field("text","spec","Ваша специальность*")}</div>
           {consent(True)}
           <div><button class="btn btn--primary" type="submit">Подобрать курс</button></div>
         </form>
@@ -403,14 +418,14 @@ def footer():
         <div class="footer__col footer__col--menu"><h3>Центр</h3>{"".join(f'<a href="{h}">{t}</a>' for h,t in menu)}</div>
         <div class="footer__col"><h3>Новости и акции</h3><p class="footer__muted">Даты стартов, скидки и бесплатные мероприятия — раз в неделю</p>
           <div><a class="btn btn--primary btn--m" href="#">{icon("send","icon icon--sm")}Подписаться в Telegram</a></div>
-          <a class="store-badge" href="#"><span><small>Скачайте из</small><b>RuStore</b></span></a></div>
+          {store_badges()}</div>
         <div class="footer__col">
           {logo(True)}
           <a class="t-h4 t-nums" href="{PHONE_HREF}">{PHONE}</a>
           <a href="mailto:{EMAIL}">{EMAIL}</a>
           <address class="footer__muted">{ADDR}. Пн–Пт 9:00–20:00, Сб–Вс 10:00–16:00</address>
           <p class="footer__legal">{ORG_LEGAL} — {ORG_BRAND}. Лицензия на образовательную деятельность {LICENSE_FULL}. ИНН {INN}, ОГРН {OGRN}</p>
-          <img class="footer__portal" src="assets/img/moscow-portal.webp" width="300" height="59" loading="lazy" alt="Участник портала поставщиков Правительства Москвы">
+          <img class="footer__portal" src="{img_src("moscow-portal")}" width="300" height="59" loading="lazy" alt="Участник портала поставщиков Правительства Москвы">
         </div>
       </div>
       <div class="footer__divider"></div>
@@ -428,8 +443,8 @@ def footer():
       <form class="lead-popup__form" data-lead novalidate>
         {field("text","name","Имя*",surface=True)}
         {field("tel","phone",surface=True)}
+        {consent()}
         <button class="btn btn--primary btn--block" type="submit">Отправить</button>
-        <p class="t-caption t-muted">Нажимая «Отправить», вы соглашаетесь на обработку персональных данных</p>
       </form>
     </div>
   </div>
@@ -517,11 +532,6 @@ def finalize(html):
     html = html.replace(' href="#quiz"', ' role="button" tabindex="0" data-popup="lead"')
     # Ссылки на неготовые страницы: без href, без перехода и без hover
     html = html.replace(' href="#"', ' aria-disabled="true"')
-    # Кнопки-заглушки
-    for label in ("Показать ещё 18 курсов", "Показать ещё даты", "Есть промокод?"):
-        html = html.replace(f'type="button">{label}<', f'type="button" aria-disabled="true">{label}<')
-        html = html.replace(f'type="button" style="align-self:center">{label}<', f'type="button" style="align-self:center" aria-disabled="true">{label}<')
-        html = html.replace(f'type="button" style="align-self:flex-start">{label}<', f'type="button" style="align-self:flex-start" aria-disabled="true">{label}<')
     return html
 
 # ======================= Блоки =======================
@@ -534,10 +544,19 @@ def versioned(path):
         data = f.read().replace(b"\r\n", b"\n")
     return f"{path}?v={hashlib.md5(data).hexdigest()[:8]}"
 
+_IMG_V = {}
+def img_src(name):
+    """assets/img/<name>.webp?v=<хеш файла>. Beget отдаёт картинки с кэшем на 30 дней: без версии
+    картинку, заменённую под тем же именем, браузеры ещё месяц показывали бы старой."""
+    if name not in _IMG_V:
+        path = os.path.join(OUT, "assets", "img", f"{name}.webp")
+        _IMG_V[name] = hashlib.md5(open(path, "rb").read()).hexdigest()[:8] if os.path.exists(path) else ""
+    return f"assets/img/{name}.webp" + (f"?v={_IMG_V[name]}" if _IMG_V[name] else "")
+
 def img(src, alt, w, h, cls="", lazy=True, extra=""):
     l = ' loading="lazy" decoding="async"' if lazy else ' fetchpriority="high"'
     c = f' class="{cls}"' if cls else ""
-    return f'<img{c} src="assets/img/{src}.webp" alt="{alt}" width="{w}" height="{h}"{l}{extra}>'
+    return f'<img{c} src="{img_src(src)}" alt="{alt}" width="{w}" height="{h}"{l}{extra}>'
 
 def section_head(title, lead=None, center=True, tag="h2"):
     lead_html = f'<p class="section-head__lead">{lead}</p>' if lead else ""
@@ -546,7 +565,7 @@ def section_head(title, lead=None, center=True, tag="h2"):
 def course_card(title, meta, old, price, badges, image, href=None, btn="Записаться на курс"):
     b = "".join(f'<span class="badge badge--{k}">{t}</span>' for k,t in badges)
     if href is None:
-        href = READY_COURSE if title.startswith("Классический массаж с нуля") else "#"
+        href = READY_COURSE
     hover = " card-hover" if href != "#" else ""
     old_html = f'<span class="course-card__old">{old}</span>' if old else ""
     return f'''<article class="course-card{hover} reveal">
@@ -720,7 +739,7 @@ def home():
     for i, (im, t, l, alt) in enumerate(slides):
         act = " is-active" if i == 0 else ""
         load = ' fetchpriority="high"' if i == 0 else ' loading="lazy" decoding="async"'
-        media.append(f'<img class="hero-slider__img{act}" src="assets/img/{im}.webp" alt="{alt}" width="1404" height="1300"{load}>')
+        media.append(f'<img class="hero-slider__img{act}" src="{img_src(im)}" alt="{alt}" width="1404" height="1300"{load}>')
         title = f"<h1>{t}</h1>" if i == 0 else f'<p class="t-h1">{t}</p>'
         hidden = "" if i == 0 else ' aria-hidden="true"'
         texts.append(f'<div class="hero-slider__text{act}"{hidden}>{title}</div>')
@@ -770,7 +789,7 @@ def home():
     <section class="section container" aria-labelledby="bento-title">
       {section_head("Как МЦПО помогает стать востребованным специалистом","Практика на моделях, преподаватели из клиник и документы, которые принимает любой работодатель").replace('class="section-head__title"','class="section-head__title" id="bento-title"')}
       <div class="bento" data-stagger data-focus-list>
-        <article class="feature bento__diploma reveal"><div class="feature__media feature__media--tall-m"><picture><source media="(max-width: 767px)" srcset="assets/img/adv-diploma-tall.webp" width="660" height="825">{img("adv-diploma","Выпускница МЦПО с удостоверением",748,440)}</picture></div><h3 class="feature__title">Удостоверение в ФИС ФРДО</h3><p class="feature__text">Документ установленного образца: сведения вносим в федеральный реестр — работодатель и аккредитационная комиссия проверят его онлайн.</p></article>
+        <article class="feature bento__diploma reveal"><div class="feature__media feature__media--tall-m"><picture><source media="(max-width: 767px)" srcset="{img_src("adv-diploma-tall")}" width="660" height="825">{img("adv-diploma","Выпускница МЦПО с удостоверением",748,440)}</picture></div><h3 class="feature__title">Удостоверение в ФИС ФРДО</h3><p class="feature__text">Документ установленного образца: сведения вносим в федеральный реестр — работодатель и аккредитационная комиссия проверят его онлайн.</p></article>
         <article class="feature feature--deco bento__loyalty reveal"><h3 class="feature__title">Скидки до 35% постоянным слушателям</h3><p class="feature__text">Программа лояльности: чем больше курсов вы проходите, тем выгоднее следующий.</p>{img("adv-percent","",1028,798,"feature__deco")}</article>
         <article class="feature feature--photo bento__teachers reveal"><div class="stack gap-sm"><h3 class="feature__title">Преподаватели — практикующие врачи</h3><p class="feature__text">Ведут занятия специалисты с клинической практикой: разбирают реальные случаи, а не только теорию.</p></div>{img("adv-teachers","Преподаватели МЦПО",748,560,"feature__photo")}</article>
         <article class="feature bento__access reveal"><h3 class="feature__title">Материалы остаются у вас</h3><p class="feature__text">Доступ к лекциям, видео и методичкам на платформе — без ограничения срока.</p></article>
@@ -802,7 +821,7 @@ def home():
     <section class="container" aria-labelledby="app-title">
       <div class="app reveal">
         {img("app-bg","",1380,465,"app__bg")}
-        <div class="stack gap-lg"><h2 id="app-title">Учитесь в приложении — с телефона и в любое время</h2><p class="t-secondary">Лекции, тесты и связь с преподавателем в одном приложении. Прогресс сохраняется между телефоном и компьютером.</p><div><a class="store-badge store-badge--dark" href="#"><span><small>Скачайте из</small><b>RuStore</b></span></a></div></div>
+        <div class="stack gap-lg"><h2 id="app-title">Учитесь в приложении — с телефона и в любое время</h2><p class="t-secondary">Лекции, тесты и связь с преподавателем в одном приложении. Прогресс сохраняется между телефоном и компьютером.</p>{store_badges()}</div>
         {img("app-phone","Приложение МЦПО на смартфоне",463,434,"app__phone")}
       </div>
     </section>
@@ -827,9 +846,14 @@ def price_group(ph_from, ph_to):
             f'<input type="number" inputmode="numeric" placeholder="{ph_from}" aria-label="Цена от">'
             f'<input type="number" inputmode="numeric" placeholder="{ph_to}" aria-label="Цена до"></div></fieldset>')
 
+def check_group(title, opts):
+    # галочек по умолчанию нет: каталог открывается без фильтров, счётчик у кнопок скрыт
+    return f'<fieldset class="filter-group"><legend>{title}</legend>' + "".join(f'<label class="check"><input type="checkbox" name="f"><span class="check__box"></span><span>{o}</span></label>' for o in opts) + '</fieldset>'
+
 def catalog_filters(groups, apply_label):
-    """Фильтры: на компьютере — колонка слева от курсов, на планшете и телефоне — модальное окно
-    (затемнение + окно, на телефоне во весь экран). Открывает кнопка с data-open="filters"."""
+    """Фильтры: на компьютере — колонка слева от курсов, по умолчанию скрыта: её показывает и прячет
+    кнопка «Фильтры» в полосе над курсами (catalog_bar). На планшете и телефоне — модальное окно
+    (затемнение + окно, на телефоне во весь экран), его открывает кнопка с data-open="filters"."""
     return f'''<aside class="catalog__filters" id="filters" aria-label="Фильтры" data-no-autofocus>
           <div class="catalog__filters-overlay" data-close></div>
           <div class="catalog__filters-panel">
@@ -850,8 +874,18 @@ def catalog_mobile_bar(caption, items):
               {icon("chevron-down","icon icon--sm dir-select__icon")}
               <select class="dir-select__native" data-dir-select aria-label="Направление"><optgroup label="{caption}">{opts}</optgroup></select>
             </label>
-            <button class="icon-btn filter-btn" type="button" data-open="filters" aria-controls="filters" aria-expanded="false" aria-label="Фильтры">{icon("filter")}<span class="filter-btn__count" data-filter-count>2</span></button>
+            <button class="icon-btn filter-btn" type="button" data-open="filters" aria-controls="filters" aria-expanded="false" aria-label="Фильтры">{icon("filter")}<span class="filter-btn__count" data-filter-count hidden>0</span></button>
           </div>'''
+
+def catalog_bar(title, found):
+    """Полоса над курсами: направление, кнопка «Фильтры» и сколько найдено. Кнопок две, видна одна:
+    на компьютере — показать/скрыть колонку фильтров (data-filters-toggle, main.js), на планшете —
+    открыть окно (data-open). На телефоне полосу заменяет catalog_mobile_bar."""
+    label = f'{icon("filter","icon icon--sm")}<span>Фильтры<span data-filter-count-wrap hidden> (<span data-filter-count>0</span>)</span></span>'
+    return (f'<div class="catalog__bar"><h2 class="t-h3">{title}</h2>'
+            f'<button class="btn btn--outline btn--m catalog__filter-toggle" type="button" aria-controls="filters" aria-expanded="false" data-filters-toggle>{label}</button>'
+            f'<button class="btn btn--outline btn--m catalog__filter-btn" type="button" data-open="filters" aria-controls="filters" aria-expanded="false">{label}</button>'
+            f'<span class="t-body-s t-muted">{found}</span></div>')
 
 # Карточки курсов на странице факультета массажа. Их же с ценами показывает поиск в шапке.
 MASSAGE_COURSES = [("Медицинский массаж: повышение квалификации, 144 ч","Для медсестёр по массажу · очно или онлайн","24 000 ₽","от 19 100 ₽",[("edu","с мед. образованием"),("hours","144 ак. ч.")],"course-1"),
@@ -866,17 +900,15 @@ def faculty():
     subs = ["Медицинский и оздоровительный массаж","ЛФК и спортивная медицина","SPA-процедуры и коррекция фигуры","Медицинская реабилитация","Массаж лица","Детский массаж"]
     subs_html = '<div class="tabs tabs--wrap catalog__tabs" role="tablist" aria-label="Подкатегории">' + "".join(f'<button class="tab tab--l{" is-active" if i==0 else ""}" type="button" role="tab" aria-selected="{"true" if i==0 else "false"}" tabindex="{0 if i==0 else -1}">{t}</button>' for i,t in enumerate(subs)) + '</div>'
     courses = MASSAGE_COURSES
-    def fgroup(title, opts, checked=()):
-        return f'<fieldset class="filter-group"><legend>{title}</legend>' + "".join(f'<label class="check"><input type="checkbox" name="f"{" checked" if i in checked else ""}><span class="check__box"></span><span>{o}</span></label>' for i,o in enumerate(opts)) + '</fieldset>'
-    whom = [("num-1","Новичкам без опыта","Освоите анатомию и базовые техники классического массажа с нуля и сможете принимать первых клиентов."),("num-2","Практикующим массажистам","Добавите медицинский, лимфодренажный и спортивный массаж, расширите услуги и поднимете стоимость сеанса."),("num-3","Медсёстрам и специалистам смежных сфер","Получите сертификат «Медицинский массаж», а фитнес-тренеры и косметологи — востребованный навык.")]
-    whom_html = "".join(f'<article class="whom-card reveal"><div class="whom-card__head">{img(i,"",120,128)}<h3>{t}</h3></div><p class="t-body-s t-muted">{d}</p></article>' for i,t,d in whom)
+    whom =[("num-1","Новичкам без опыта","Освоите анатомию и базовые техники классического массажа с нуля и сможете принимать первых клиентов."),("num-2","Практикующим массажистам","Добавите медицинский, лимфодренажный и спортивный массаж, расширите услуги и поднимете стоимость сеанса."),("num-3","Медсёстрам и специалистам смежных сфер","Получите сертификат «Медицинский массаж», а фитнес-тренеры и косметологи — востребованный навык.")]
+    whom_html = "".join(f'<article class="whom-card reveal"><div class="whom-card__head">{img(i,"",147,192)}<h3>{t}</h3></div><p class="t-body-s t-muted">{d}</p></article>' for i,t,d in whom)
     persp = f'''<div class="persp" data-stagger>
         <article class="persp__card reveal"><p class="t-display" data-count="95" data-suffix="%">95%</p><p class="t-body-s t-muted">выпускников работают по специальности, открывают кабинет или ведут частную практику</p></article>
-        <article class="persp__card persp__card--photo reveal"><h3>Медицинские учреждения</h3><p class="t-body-s t-muted">Поликлиники, больницы, реабилитационные и санаторные центры</p>{img("persp-1","",580,432)}</article>
-        <article class="persp__card persp__card--photo reveal"><h3>SPA и фитнес-центры</h3><p class="t-body-s t-muted">Салоны красоты, SPA-комплексы и фитнес-клубы</p>{img("persp-2","",580,432)}</article>
+        <article class="persp__card persp__card--photo reveal"><h3>Медицинские учреждения</h3><p class="t-body-s t-muted">Поликлиники, больницы, реабилитационные и санаторные центры</p>{img("persp-1","",580,432,extra=' style="--pos-y:10%"')}</article>
+        <article class="persp__card persp__card--photo reveal"><h3>SPA и фитнес-центры</h3><p class="t-body-s t-muted">Салоны красоты, SPA-комплексы и фитнес-клубы</p>{img("persp-2","",580,432,extra=' style="--pos-y:75%"')}</article>
         <article class="persp__card reveal"><p class="t-display" data-count="80" data-suffix="%">80%</p><p class="t-body-s t-muted">времени курса — практика на моделях под контролем преподавателя</p></article>
-        <article class="persp__card persp__card--photo reveal"><h3>Собственный кабинет</h3><p class="t-body-s t-muted">Частная практика, выезд к клиентам или аренда кабинета</p>{img("persp-3","",580,432)}</article>
-        <article class="persp__card persp__card--photo reveal"><h3>Реабилитация</h3><p class="t-body-s t-muted">Восстановление после травм и операций в центрах реабилитации</p>{img("persp-4","",580,432)}</article>
+        <article class="persp__card persp__card--photo reveal"><h3>Собственный кабинет</h3><p class="t-body-s t-muted">Частная практика, выезд к клиентам или аренда кабинета</p>{img("persp-3","",580,432,extra=' style="--pos-y:15%"')}</article>
+        <article class="persp__card persp__card--photo reveal"><h3>Реабилитация</h3><p class="t-body-s t-muted">Восстановление после травм и операций в центрах реабилитации</p>{img("persp-4","",580,432,extra=' style="--pos-y:5%"')}</article>
       </div>'''
     faq_html, faq_ld = faq_block("Вопросы о курсах массажа", MASSAGE_FAQ)
     body = f'''
@@ -887,13 +919,13 @@ def faculty():
       {subs_html}
       <div class="catalog">
         {catalog_filters(price_group("от 5 000", "до 120 000")
-                         + fgroup("Ваше образование",["Без медицинского","Среднее медицинское","Высшее медицинское","Знаю основы массажа"])
-                         + fgroup("Форма обучения",["Онлайн","Очно в Москве","Индивидуально","Интенсив","По выходным"],(1,))
-                         + fgroup("Документ",["Удостоверение о ПК","Диплом о переподготовке","Сертификат","С баллами НМО"],(1,)), "Показать курсы")}
+                         + check_group("Ваше образование",["Без медицинского","Среднее медицинское","Высшее медицинское","Знаю основы массажа"])
+                         + check_group("Форма обучения",["Онлайн","Очно в Москве","Индивидуально","Интенсив","По выходным"])
+                         + check_group("Документ",["Удостоверение о ПК","Диплом о переподготовке","Сертификат","С баллами НМО"]), "Показать курсы")}
         <div class="catalog__results">
           {catalog_mobile_bar("Массаж и реабилитация", subs)}
-          <div class="catalog__bar"><h2 class="t-h3">Медицинский и оздоровительный массаж</h2><button class="btn btn--outline btn--m catalog__filter-btn" type="button" data-open="filters">{icon("filter","icon icon--sm")}<span>Фильтры<span data-filter-count-wrap> (<span data-filter-count>2</span>)</span></span></button><span class="t-body-s t-muted">Найдено 24 курса</span></div>
-          <div class="grid grid-3" data-stagger>{"".join(course_card(*c, btn="Записаться") for c in courses)}</div>
+          {catalog_bar("Медицинский и оздоровительный массаж", "Найдено 24 курса")}
+          <div class="grid catalog__grid" data-stagger>{"".join(course_card(*c, btn="Записаться") for c in courses)}</div>
         </div>
       </div>
     </section>
@@ -930,13 +962,62 @@ def faculty():
                 "Курсы массажа с нуля и повышение квалификации по медицинскому массажу: 66 программ, 80% практики, удостоверение в ФИС ФРДО. Очно в Москве и онлайн.",
                 body, "Аккредитация", [faq_ld], cr)
 
+# Тарифы курса классического массажа — со страницы этого курса на mirk.msk.ru (29.09.2026):
+# формат, описание, цена без скидки, цена, два своих пункта. Главный — очно в группе.
+TARIFFS = [
+    ("Дистанционно", "Проходите обучение онлайн в удобное время из любой точки.", "8 900 ₽", "7 600 ₽",
+     ["72 ак. ч. онлайн, в удобное время", "Учитесь из любого города"], False),
+    ("Очно в группе", "Занятия в классе с преподавателем и одногруппниками.", "21 500 ₽", "18 300 ₽",
+     ["72 ак. ч. в учебном классе", "Группы по будням: Пн, Ср, Пт или Вт, Чт"], True),
+    ("Очно в выходной", "Формат для занятых: обучение по выходным дням.", "23 600 ₽", "20 100 ₽",
+     ["72 ак. ч. в учебном классе", "Занятия по выходным: Сб, Вс"], False),
+]
+TARIFF_COMMON = ["Уроки и материалы остаются навсегда", "Обратная связь от преподавателей", "Сертификат установленного образца"]
+TARIFF_WIDE = ("Индивидуально", "Персональное обучение с преподавателем в удобном графике.", "68 900 ₽", "58 600 ₽",
+               ["Один на один с преподавателем", "Свой график занятий", "Сертификат установленного образца"])
+
+def tariffs_block():
+    """«Тарифы» на странице курса — по блоку из кита (раздел «02 · Components — блок «Тарифы»»):
+    три белые карточки на тёмной панели, главная — очно в группе (на компьютере по центру,
+    на планшете и телефоне первой), снизу широкая «Индивидуально». «Записаться» открывает заявку."""
+    def rub(n): return f"{n:,}".replace(",", " ") + " ₽"
+    def num(s): return int(s.replace(" ", "").replace("₽", ""))
+    def price(old, now, cls=""):
+        return (f'<p class="tariff-price{cls}"><s><span class="visually-hidden">Без скидки: </span>{old}</s>'
+                f'<span><b>{now}</b> за курс</span></p>')
+    def signup(title, cls):
+        return f'<a class="btn {cls} btn--m" href="#lead" data-popup-title="{title}: запись на курс">Записаться</a>'
+    cards = []
+    for title, desc, old, now, own, main in TARIFFS:
+        badge = ('<span class="badge badge--soon">Рекомендуем</span>' if main
+                 else f'<span class="badge badge--edu">Выгода {rub(num(old) - num(now))}</span>')
+        cards.append(f'''<article class="tariff-card{" tariff-card--main" if main else ""}">
+            <div class="tariff-card__head"><div class="tariff-card__title"><h3>{title}</h3>{badge}</div><p class="tariff-card__desc">{desc}</p></div>
+            {price(old, now)}
+            {checklist(own + TARIFF_COMMON, "checklist--s tariff-card__list")}
+            {signup(title, "btn--primary" if main else "btn--outline")}
+          </article>''')
+    title, desc, old, now, feats = TARIFF_WIDE
+    return f'''
+    <section class="container" id="tariffs" aria-labelledby="tariffs-title">
+      <div class="tariffs reveal">
+        <div class="tariffs__head"><h2 class="tariffs__title" id="tariffs-title">Тарифы</h2><p class="tariffs__lead">72 ак. ч., можно без медицинского образования. Сертификат установленного образца в любом формате, рассрочка от 633&nbsp;₽/мес.</p></div>
+        <div class="tariffs__cards">{"".join(cards)}</div>
+        <article class="tariff-wide">
+          <div class="tariff-wide__info"><h3>{title}</h3><p>{desc}</p>{checklist(feats, "checklist--s checklist--inverse checklist--row")}</div>
+          <div class="tariff-wide__buy">{price(old, now, " tariff-price--inverse")}{signup(title, "btn--white")}</div>
+        </article>
+      </div>
+    </section>
+'''
+
 def course():
     cr = [("Главная","index.html"),("Массаж и реабилитация","faculty-massage.html"),("Классический массаж с нуля","course-classic-massage.html")]
     mods = [("1 модуль","Анатомия и физиология для массажиста","16 ч",["Анатомия опорно-двигательного аппарата","Физиология кожи и мышц","Показания и противопоказания к массажу"]),
             ("2 модуль","Классический массаж: приёмы и техники","24 ч",["Поглаживание, растирание, разминание, вибрация","Эргономика и постановка рук","Отработка на моделях — 70% времени модуля"]),
             ("3 модуль","Массаж отдельных частей тела","24 ч",["Спина и шейно-воротниковая зона","Конечности","Общий массаж тела"]),
             ("4 модуль","Самостоятельная работа и итоговая аттестация","8 ч",["Видеоуроки на платформе","Практический экзамен","Выдача удостоверения"])]
-    mods_html = "".join(f'<details class="module reveal"{" open" if i==0 else ""}><summary><span class="module__num">{n}</span><span class="module__title">{t}</span><span class="module__hours">{h}</span>{icon("chevron-down")}</summary><div class="module__content"><ul>{"".join(f"<li>{x}</li>" for x in lst)}</ul></div></details>' for i,(n,t,h,lst) in enumerate(mods))
+    mods_html = "".join(f'<details class="module reveal"{" open" if i==0 else ""}><summary><span class="module__num">{n}</span><span class="module__title">{t}</span><span class="module__hours">{h}</span><span class="module__icon">{icon("chevron-down")}</span></summary><div class="module__content"><ul>{"".join(f"<li>{x}</li>" for x in lst)}</ul></div></details>' for i,(n,t,h,lst) in enumerate(mods))
     rows = [("19 октября 2026","Пн, Ср, Пт",True),("9 ноября 2026","Вт, Чт",False),("23 ноября 2026","Сб, Вс",False)]
     rows_html = "".join(f'<tr{CLS_SOON if s else ""}><td data-label="Дата">{d}</td><td data-label="Дни">{dy}</td><td data-label="Время">09:00–15:00</td><td data-label="Стоимость">38 700 ₽</td><td><a class="btn btn--primary" href="#lead">Записаться</a></td></tr>' for d,dy,s in rows)
     logos = "".join(img(n,a,w,h) for n,a,w,h in [("logo-3sestry","Три сестры",274,270),("logo-dema","ДЭМА",260,310),("logo-emc","EMC",526,316),("logo-ifr","Институт физической реабилитации",500,208),("logo-rehab","Центр реабилитации",594,188)])
@@ -946,7 +1027,7 @@ def course():
             ("Чат с куратором","Куратор на связи всё обучение","Задавайте вопросы в чате в рабочее время: куратор отвечает по программе, расписанию и документам, а преподаватель — по технике и разбору ваших видео.","lead-operator","Куратор отвечает слушателям"),
             ("Материалы","Методички и конспекты остаются у вас","Все лекции, схемы и методические материалы доступны на платформе и после окончания курса — к ним удобно возвращаться в работе.","course-1","Учебные материалы курса"),
             ("Видео","Видеоуроки с разбором техник","Каждый приём снят крупным планом с нескольких ракурсов: можно пересматривать в замедлении и отрабатывать дома между занятиями.","course-desc","Видеоурок по классическому массажу")]
-    live_tabs = '<div class="tabs" role="tablist" aria-label="Форматы обучения">' + "".join(f'<button class="tab{" is-active" if i==0 else ""}" type="button" role="tab" id="live-tab{i}" aria-controls="live-p{i}" aria-selected="{"true" if i==0 else "false"}" tabindex="{0 if i==0 else -1}">{t}</button>' for i,(t,_,_,_,_) in enumerate(live)) + '</div>'
+    live_tabs = '<div class="tabs live__tabs" role="tablist" aria-label="Форматы обучения">' + "".join(f'<button class="tab{" is-active" if i==0 else ""}" type="button" role="tab" id="live-tab{i}" aria-controls="live-p{i}" aria-selected="{"true" if i==0 else "false"}" tabindex="{0 if i==0 else -1}">{t}</button>' for i,(t,_,_,_,_) in enumerate(live)) + '</div>'
     live_panels = "".join(f'<div class="live" role="tabpanel" id="live-p{i}" aria-labelledby="live-tab{i}"{"" if i==0 else " hidden"}><div class="stack gap-md"><h3 class="t-h2">{h}</h3><p class="t-secondary">{d}</p></div>{img(im, alt, 1052, 802)}</div>' for i,(_,h,d,im,alt) in enumerate(live))
     course_ld = {"@context":"https://schema.org","@type":"Course","name":"Курс классического массажа с нуля","description":"Курс классического массажа для начинающих без медицинского образования: 72 академических часа, 80% практики, удостоверение о повышении квалификации.",
                  "provider":{"@type":"EducationalOrganization","name":"МЦПО","sameAs":SITE},"offers":{"@type":"Offer","price":"16900","priceCurrency":"RUB","category":"Paid"},
@@ -960,7 +1041,7 @@ def course():
           <div class="row gap-xs wrap"><span class="badge badge--photo">без мед. образования</span><span class="badge badge--photo">72 ак. ч.</span></div>
           <h1>Курс классического массажа с нуля в Москве</h1>
           <ul class="bullets"><li>Медицинское образование не требуется</li><li>80% занятий — практика на моделях</li><li>Сертификат и удостоверение о повышении квалификации</li></ul>
-          <div class="row gap-md wrap course-hero__actions"><a class="btn btn--primary" href="#start">Выбрать дату старта</a><a class="btn btn--outline-inverse" href="#program">Программа курса{icon("arrow-up-right")}</a></div>
+          <div class="row gap-md wrap course-hero__actions"><a class="btn btn--primary" href="#tariffs">К тарифам</a><a class="btn btn--outline-inverse" href="#start">Выбрать дату старта</a></div>
         </div>
         <form class="course-hero__form" data-lead novalidate>
           <h2 class="t-h3">Поможем выбрать формат и дату</h2>
@@ -993,18 +1074,6 @@ def course():
       </div>
     </section>
 
-    <section class="section container" id="program" aria-labelledby="program-title" data-stagger>
-      {section_head("Программа курса по модулям","72 академических часа: теория онлайн, практика — в учебном кабинете").replace('class="section-head__title"','class="section-head__title" id="program-title"')}
-      <div class="stack gap-md">{mods_html}</div>
-    </section>
-
-    <section class="container" aria-labelledby="cdocs-title">
-      <div class="docs docs--course reveal">
-        <div class="stack gap-lg"><h2 id="cdocs-title">Документы после курса</h2><p class="t-secondary">Удостоверение о повышении квалификации установленного образца — сведения вносим в ФИС ФРДО. Дополнительно выдаём сертификат МЦПО о прохождении практики.</p><a class="link t-body-s" href="#">Обучаем по государственной лицензии {LICENSE}</a></div>
-        <div class="docs__diploma">{img("diploma","Диплом МЦПО",1074,680)}</div>
-      </div>
-    </section>
-
     <section class="container" aria-labelledby="salary-title">
       <div class="salary reveal">
         <div class="salary__bars">
@@ -1018,7 +1087,10 @@ def course():
       </div>
     </section>
 
-{reviews_block("Отзывы выпускников курса")}
+    <section class="section container" id="program" aria-labelledby="program-title" data-stagger>
+      {section_head("Программа курса по модулям","72 академических часа: теория онлайн, практика — в учебном кабинете").replace('class="section-head__title"','class="section-head__title" id="program-title"')}
+      <div class="stack gap-md">{mods_html}</div>
+    </section>
 
     <section class="section container" aria-labelledby="live-title">
       <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="live-title">Живая практика + видеоуроки</h2></div>
@@ -1026,17 +1098,32 @@ def course():
       <div class="live-panels">{live_panels}</div>
     </section>
 
+{teachers_block()}
+
+    <section class="container" aria-labelledby="cdocs-title">
+      <div class="docs docs--course reveal">
+        <div class="stack gap-lg"><h2 id="cdocs-title">Документы после курса</h2><p class="t-secondary">Удостоверение о повышении квалификации установленного образца — сведения вносим в ФИС ФРДО. Дополнительно выдаём сертификат МЦПО о прохождении практики.</p><a class="link t-body-s" href="#">Обучаем по государственной лицензии {LICENSE}</a></div>
+        <div class="docs__diploma">{img("diploma","Диплом МЦПО",468,680)}</div>
+      </div>
+    </section>
+
     <section class="section container" aria-labelledby="partners-title">
       {section_head("Выпускники работают в ведущих клиниках и центрах","Среди работодателей наших выпускников:").replace('class="section-head__title"','class="section-head__title" id="partners-title"')}
       <div class="logos reveal">{logos}</div>
-      <div class="cta reveal"><p class="cta__text"><span class="t-hl" data-count="350000" data-suffix="+">350 000+</span> специалистов уже повысили квалификацию в МЦПО. Следующий — вы</p><a class="btn btn--primary" href="#start">Подобрать дату</a></div>
+      <div class="cta reveal"><p class="cta__text"><span class="t-hl count-inline" data-count="350000" data-suffix="+">350 000+</span> специалистов уже повысили квалификацию в МЦПО. Следующий — вы</p><a class="btn btn--primary" href="#start">Подобрать дату</a></div>
     </section>
 
+{reviews_block("Отзывы выпускников курса")}
+
 {why_block()}
+
+{tariffs_block()}
+
 {lead_block()}
-{faq_html}
+
 {map_block()}
-{teachers_block()}
+
+{faq_html}
 '''
     sticky = f'<div class="sticky-cta" aria-hidden="false"><div><p class="t-h4">от 16 900 ₽</p><p class="t-caption t-muted">старт 19 октября</p></div><a class="btn btn--primary" href="#lead">Записаться</a></div>'
     return page("course-classic-massage.html","Курс классического массажа с нуля в Москве — 72 часа, удостоверение | МЦПО",
@@ -1047,33 +1134,70 @@ def intro(cr, h1, lead=None):
     l = f'<p class="intro__lead">{lead}</p>' if lead else ""
     return f'{breadcrumbs(cr)}<h1>{h1}</h1>{l}'
 
+# Даты групп в карточках графика на расписании и у преподавателя (демо): первые три видны сразу,
+# ещё три раскрывает «Показать ещё даты» (main.js, заказчик 29.09). День старта совпадает с днями занятий.
+SCHED_ROWS = [("19 октября 2026", "Пн, Ср, Пт", True), ("26 октября 2026", "Вт, Чт", False), ("31 октября 2026", "Сб, Вс", False)]
+SCHED_MORE = [("9 ноября 2026", "Пн, Ср, Пт"), ("17 ноября 2026", "Вт, Чт"), ("21 ноября 2026", "Сб, Вс")]
+MORE_DATES_BTN = '<button class="link t-body-s" type="button" style="align-self:center" data-more-dates aria-expanded="false">Показать ещё даты</button>'
+
+def sched_rows():
+    def row(d, dy, attrs):
+        return (f'<tr{attrs}><td data-label="Дата">{d}</td><td data-label="Дни">{dy}</td><td data-label="Время">09:00–15:00</td>'
+                f'<td data-label="Стоимость">38 700 ₽</td><td><a class="btn btn--primary" href="#lead">Записаться</a></td></tr>')
+    return ("".join(row(d, dy, CLS_SOON if soon else "") for d, dy, soon in SCHED_ROWS)
+            + "".join(row(d, dy, " data-extra hidden") for d, dy in SCHED_MORE))
+
 def schedule():
     cr = [("Главная","index.html"),("Расписание","schedule.html")]
-    names = ["Медицинский массаж: повышение квалификации, 144 ч","Медицинский массаж: первичная специализация, 288 ч","Классический массаж с нуля","Детский массаж","Лимфодренажный массаж","Антицеллюлитный массаж","Спортивный массаж","Массаж лица"]
-    lst = "".join(f'<a href="{"#c" + str(i) if i < 2 else "#"}"{A_CUR_TRUE if i==0 else ""}>{n}</a>' for i,n in enumerate(names))
+    # слева курсы, справа их графики: каждый пункт прокручивает к своему графику (#c0…, заказчик 29.09),
+    # название в графике ведёт на страницу курса. Даты и цены в графиках — демо. У «Массажа лица» часов в данных нет
+    courses = [("Медицинский массаж: повышение квалификации, 144 ч", "Медицинский массаж: повышение квалификации с сертификатом", "144 ак. ч."),
+               ("Медицинский массаж: первичная специализация, 288 ч", "Медицинский массаж: первичная специализация", "288 ак. ч."),
+               ("Классический массаж с нуля", "Классический массаж с нуля", "72 ак. ч."),
+               ("Детский массаж", "Детский массаж", "144 ак. ч."),
+               ("Лимфодренажный массаж", "Лимфодренажный массаж", "24 ак. ч."),
+               ("Антицеллюлитный массаж", "Антицеллюлитный массаж", "8 ак. ч."),
+               ("Спортивный массаж", "Спортивный массаж", "36 ак. ч."),
+               ("Массаж лица", "Массаж лица", "")]
+    lst = "".join(f'<a href="#c{i}"{A_CUR_TRUE if i==0 else ""}>{n}</a>' for i,(n,_t,_h) in enumerate(courses))
     dir_options = "".join(f'<option value="{fid}">{fname}</option>' for fid, fname, _i, _d in CATALOG)
     def card(i, title, hrs):
-        rows = [("19 октября 2026","Пн, Ср, Пт",True),("26 октября 2026","Вт, Чт",False),("31 октября 2026","Сб, Вс",False)]
-        r = "".join(f'<tr{CLS_SOON if s else ""}><td data-label="Дата">{d}</td><td data-label="Дни">{dy}</td><td data-label="Время">09:00–15:00</td><td data-label="Стоимость">38 700 ₽</td><td><a class="btn btn--primary" href="#lead">Записаться</a></td></tr>' for d,dy,s in rows)
+        r = sched_rows()
         return f'''<article class="sched-course reveal" id="c{i}">
-          <div class="sched-course__head"><h2>{title}</h2><span class="badge badge--outline">{hrs}</span></div>
+          <div class="sched-course__head"><h2><a href="{READY_COURSE}">{title}</a></h2>{f'<span class="badge badge--outline">{hrs}</span>' if hrs else ""}</div>
           {tabs(["Октябрь","Ноябрь","Декабрь"],0,"Месяц")}
           <table class="schedule-table"><thead><tr><th scope="col">Дата</th><th scope="col">Дни</th><th scope="col">Время</th><th scope="col">Стоимость</th><th><span class="visually-hidden">Запись</span></th></tr></thead><tbody>{r}</tbody></table>
-          <button class="link t-body-s" type="button" style="align-self:center">Показать ещё даты</button>
+          {MORE_DATES_BTN}
         </article>'''
     body = f'''
     <section class="container intro">
       {intro(cr,"Расписание курсов и ближайшие даты старта групп","Выберите направление и формат — покажем группы с набором на ближайшие 3 месяца.")}
-      <form class="filter-bar" aria-label="Фильтр расписания" onsubmit="return false">
-        <label><span>Направление</span><span class="select"><select class="select__native" data-filter-direction><option value="">Все направления</option>{dir_options}</select></span></label>
-        <label><span>Форма обучения</span><span class="select"><select class="select__native"><option>Очно</option><option>Онлайн</option></select></span></label>
-        <label><span>Дни</span><span class="select"><select class="select__native"><option>Пн, Ср, Пт</option><option>Вт, Чт</option><option>Сб, Вс</option></select></span></label>
-        <label><span>Стоимость, ₽</span><span class="range"><input type="number" placeholder="от" aria-label="от"><input type="number" placeholder="до" aria-label="до"></span></label>
-        <div class="filter-bar__actions"><button class="btn btn--primary btn--m" type="submit">Показать группы</button><button type="reset">Сбросить фильтры</button></div>
+      <form class="sched-filters" aria-label="Фильтр расписания" onsubmit="return false" data-sched-filters>
+        <!-- телефон: направление в строке над расписанием, остальные фильтры — в окне по значку -->
+        <div class="catalog__mobile-bar">
+          <label class="dir-select">
+            <span class="dir-select__caption">Направление</span>
+            <span class="dir-select__value" data-dir-value>Все направления</span>
+            {icon("chevron-down","icon icon--sm dir-select__icon")}
+            <select class="dir-select__native" data-dir-mirror aria-label="Направление"><option value="">Все направления</option>{dir_options}</select>
+          </label>
+          <button class="icon-btn filter-btn" type="button" data-open="sched-filters" aria-controls="sched-filters" aria-expanded="false" aria-label="Фильтры">{icon("filter")}<span class="filter-btn__count" data-sched-count hidden>0</span></button>
+        </div>
+        <div class="sched-filters__layer" id="sched-filters" data-no-autofocus>
+          <div class="sched-filters__overlay" data-close></div>
+          <div class="filter-bar">
+            <div class="filters-head sched-filters__head"><h2 class="t-h3">Фильтры</h2><button class="icon-btn icon-btn--sm" type="button" data-close aria-label="Закрыть фильтры">{icon("close","icon icon--sm")}</button></div>
+            <label class="filter-bar__dir"><span>Направление</span><span class="select"><select class="select__native" data-filter-direction><option value="">Все направления</option>{dir_options}</select></span></label>
+            <label><span>Форма обучения</span><span class="select"><select class="select__native"><option>Очно</option><option>Онлайн</option></select></span></label>
+            <label><span>Дни</span><span class="select"><select class="select__native"><option>Пн, Ср, Пт</option><option>Вт, Чт</option><option>Сб, Вс</option></select></span></label>
+            <label><span>Стоимость, ₽</span><span class="range"><input type="number" placeholder="от" aria-label="от"><input type="number" placeholder="до" aria-label="до"></span></label>
+            <div class="filter-bar__actions"><button class="btn btn--primary btn--m" type="submit" data-close>Показать группы</button><button type="reset">Сбросить фильтры</button></div>
+          </div>
+        </div>
       </form>
       <div class="sched-layout">
         <nav class="course-list" aria-label="Курсы">{lst}</nav>
-        <div class="stack gap-2xl">{card(0,"Медицинский массаж: повышение квалификации с сертификатом","144 ак. ч.")}{card(1,"Медицинский массаж: первичная специализация","288 ак. ч.")}</div>
+        <div class="stack gap-2xl">{"".join(card(i, t, h) for i, (_n, t, h) in enumerate(courses))}</div>
       </div>
     </section>
 '''
@@ -1143,10 +1267,10 @@ def cart():
     items = [("Медицинский массаж: повышение квалификации, 144 ч","Онлайн · старт 10 ноября",19100,"course-1"),("Лимфодренажный массаж","Очно · старт 7 ноября",9500,"dir-massage")]
     def fmt(n): return f"{n:,}".replace(",", "\u00a0") + "\u00a0₽"
     it = "".join(f'''<article class="cart-item reveal" data-cart-item data-price="{p}">
-        <div class="cart-item__media">{img(i,t,880,540)}</div>
+        <a class="cart-item__media" href="{READY_COURSE}" tabindex="-1" aria-hidden="true">{img(i,"",880,540)}</a>
         <div class="cart-item__info">
           <div class="row gap-xs wrap cart-item__badges"><span class="badge badge--edu">с мед. образованием</span><span class="badge badge--nmo">36 баллов НМО</span></div>
-          <h2 class="t-h3">{t}</h2><p class="t-secondary">{m}</p>
+          <h2 class="t-h3 cart-item__title"><a href="{READY_COURSE}">{t}</a></h2><p class="t-secondary">{m}</p>
         </div>
         <div class="cart-item__bottom">
           <p class="cart-item__price"><span class="t-secondary">К оплате:</span><span class="t-h2 t-nums">{fmt(p)}</span></p>
@@ -1166,6 +1290,38 @@ def cart():
     # поэтому ни итоговой плашки «N курсов на сумму», ни нижней панели на мобильном
     return page("cart.html","Корзина — МЦПО","Выбранные курсы МЦПО: оформление заявки и оплата.", body, "", [], cr)
 
+# Даты старта очных групп для календаря на шаге «Формат и дата». Демо, как и расписание на сайте:
+# настоящие даты и время отдаст бэкенд. Месяц → родительный падеж → [(число, день недели)].
+START_MONTHS = [("Октябрь", "октября", [(19, "Пн"), (26, "Пн"), (31, "Сб")]),
+                ("Ноябрь", "ноября", [(9, "Пн"), (16, "Пн"), (23, "Пн")]),
+                ("Декабрь", "декабря", [(7, "Пн"), (14, "Пн")])]
+START_TIMES = ["09:00", "15:00"]
+
+def start_picker():
+    """Календарь старта очной группы — по образцу заказчика, в стиле кита: полоса месяцев со стрелками,
+    даты с днём недели, время начала; выбранное тёмно-синее, как у «таблеток» выбора (.choice-row).
+    Появляется вместо текста под формами обучения, когда выбрано «Очно в Москве» (main.js)."""
+    months = "".join(f'<button class="start-picker__month{" is-active" if i == 0 else ""}" type="button" data-month="{i}" aria-pressed="{"true" if i == 0 else "false"}">{m}</button>'
+                     for i, (m, _gen, _days) in enumerate(START_MONTHS))
+    groups = "".join(
+        f'<div class="start-picker__days" data-month-days="{i}"{"" if i == 0 else " hidden"}>'
+        + "".join(f'<label class="start-picker__day"><input type="radio" name="start-date" value="{d} {gen}"{" checked" if i == 0 and k == 0 else ""}>'
+                  f'<span class="start-picker__wd">{wd}</span><span class="start-picker__num">{d:02d}</span></label>'
+                  for k, (d, wd) in enumerate(days))
+        + '</div>' for i, (_m, gen, days) in enumerate(START_MONTHS))
+    times = "".join(f'<label class="start-picker__time"><input type="radio" name="start-time" value="{t}"{" checked" if k == 0 else ""}><span>{t}</span></label>'
+                    for k, t in enumerate(START_TIMES))
+    return f'''<fieldset class="start-picker" data-start-picker hidden>
+            <legend class="visually-hidden">Дата и время старта группы</legend>
+            <div class="start-picker__months">
+              <button class="icon-btn icon-btn--sm icon-btn--white" type="button" data-month-step="-1" aria-label="Предыдущий месяц">{icon("chevron-left")}</button>
+              <div class="start-picker__month-list">{months}</div>
+              <button class="icon-btn icon-btn--sm icon-btn--white" type="button" data-month-step="1" aria-label="Следующий месяц">{icon("chevron-right")}</button>
+            </div>
+            {groups}
+            <div class="start-picker__times" role="radiogroup" aria-label="Время начала занятий">{times}</div>
+          </fieldset>'''
+
 def checkout(step):
     cr = [("Главная","index.html"),("Корзина","cart.html"),("Оформление заявки",f"checkout-{step}.html")]
     steps = "".join(f'<li{CLS_DONE if i<step-1 else ""}{A_CUR_STEP if i==step-1 else ""}>{t}</li>' for i,t in enumerate(["Формат и дата","Контакты","Оплата"]))
@@ -1173,51 +1329,51 @@ def checkout(step):
         inner = f'''<h1>Какой формат вам подходит?</h1>
           <p class="t-body-l t-secondary">Выберите форму обучения</p>
           <div class="format-options" role="radiogroup" aria-label="Форма обучения">
-            <label class="format-option"><input type="radio" name="format" checked><span class="format-option__name">Онлайн</span><span class="t-caption t-muted t-strike">9 600 ₽</span><span class="t-h3 t-nums">7 600 ₽</span></label>
-            <label class="format-option"><input type="radio" name="format"><span class="format-option__name">Очно в Москве</span><span class="t-caption t-muted t-strike">24 000 ₽</span><span class="t-h3 t-nums">19 100 ₽</span></label>
+            <label class="format-option"><input type="radio" name="format" value="online" data-price="7 600 ₽" data-start="10 ноября" checked><span class="format-option__name">Онлайн</span><span class="t-caption t-muted t-strike">9 600 ₽</span><span class="t-h3 t-nums">7 600 ₽</span></label>
+            <label class="format-option"><input type="radio" name="format" value="offline" data-price="19 100 ₽"><span class="format-option__name">Очно в Москве</span><span class="t-caption t-muted t-strike">24 000 ₽</span><span class="t-h3 t-nums">19 100 ₽</span></label>
           </div>
-          <ul class="bullets t-secondary"><li>Верните 13% стоимости через налоговый вычет — справку выдаём бесплатно</li><li>Скидка 15% при полной оплате на сайте</li><li>Рассрочка — условия уточнит методист</li></ul>
+          <ul class="bullets t-secondary" data-format-note><li>Верните 13% стоимости через налоговый вычет — справку выдаём бесплатно</li><li>Скидка 15% при полной оплате на сайте</li><li>Рассрочка — условия уточнит методист</li></ul>
+          {start_picker()}
           <a class="btn btn--outline btn--m checkout__next" href="checkout-2.html">Далее{icon("chevron-right")}</a>'''
-        sticky_label, sticky_href = "Далее", "checkout-2.html"
+        sticky_btn = '<a class="btn btn--primary" href="checkout-2.html">Далее</a>'
     else:
         inner = f'''<h1>Как с вами связаться?</h1>
           <p class="t-body-l t-secondary">Заполните поля — пришлём договор и ссылку на оплату</p>
           <form class="checkout__form" data-lead novalidate id="checkout-form">
             {field("text","fio","ФИО полностью (для документа)*")}
             {field("tel","phone")}
-            {field("text","email","Email",False)}
-            <fieldset style="border:0;padding:0;margin:0" class="stack gap-sm"><legend class="t-h4" style="margin-bottom:12px">Есть ли у вас медицинское образование?</legend>
-              <div class="choice-row"><label><input type="radio" name="edu"><span>Высшее</span></label><label><input type="radio" name="edu" checked><span>Среднее</span></label><label><input type="radio" name="edu"><span>Нет</span></label></div>
-            </fieldset>
+            {field("text","email","Email*",error="Проверьте адрес почты")}
             {consent()}
             <button class="btn btn--outline btn--m checkout__next" type="submit">Далее{icon("chevron-right")}</button>
           </form>'''
-        sticky_label, sticky_href = "Перейти к оплате", "#checkout-form"
+        # на телефоне «Далее» в форме скрыт — отправляет её кнопка нижней панели (атрибут form), с тем же правилом:
+        # активна, только когда заполнены все поля и стоит галочка (main.js)
+        sticky_btn = '<button class="btn btn--primary" type="submit" form="checkout-form">Перейти к оплате</button>'
     body = f'''
     <section class="container intro">
       {breadcrumbs(cr)}
       <div class="checkout">
         <div class="checkout__step">
           <ol class="stepper" aria-label="Шаги оформления">{steps}</ol>
-          <div class="checkout__mini"><p class="t-body-s t-medium">Медицинский массаж: повышение квалификации, 144 ч</p><p class="t-caption t-muted">Онлайн · старт 10 ноября · 7 600 ₽</p></div>
+          <div class="checkout__mini"><p class="t-body-s t-medium">Медицинский массаж: повышение квалификации, 144 ч</p><p class="t-caption t-muted" data-order-line>Онлайн · старт 10 ноября · 7 600 ₽</p></div>
           {inner}
         </div>
         <aside class="checkout__side" aria-label="Ваш заказ">
           <div class="summary">
             <div class="summary__media">{img("group-practice","",1052,802)}</div>
             <h2 class="t-h3">Медицинский массаж: повышение квалификации, 144 ч</h2>
-            <div class="summary__meta"><div><p class="t-caption t-muted">Формат</p><p class="t-medium">Онлайн</p></div><div><p class="t-caption t-muted">Старт</p><p class="t-medium">10 ноября</p></div></div>
-            <p class="row gap-sm" style="align-items:baseline"><span class="t-secondary">Итого:</span><span class="t-h2 t-nums">7 600 ₽</span></p>
-            <button class="link t-body-s" type="button" style="align-self:flex-start">Есть промокод?</button>
+            <div class="summary__meta"><div><p class="t-caption t-muted">Формат</p><p class="t-medium" data-order-format>Онлайн</p></div><div><p class="t-caption t-muted">Старт</p><p class="t-medium" data-order-start>10 ноября</p></div></div>
+            <p class="row gap-sm" style="align-items:baseline"><span class="t-secondary">Итого:</span><span class="t-h2 t-nums" data-order-total>7 600 ₽</span></p>
+            <div class="promo-code"><button class="link t-body-s" type="button" data-promo-toggle aria-expanded="false" aria-controls="promo-form">Есть промокод?</button><form class="field__control promo-code__form" id="promo-form" hidden><input class="promo-code__input" type="text" name="promo" placeholder="Введите промокод" aria-label="Промокод" autocomplete="off" spellcheck="false"><button class="icon-btn icon-btn--sm icon-btn--accent promo-code__apply" type="submit" aria-label="Применить промокод">{icon("arrow-right","icon icon--sm")}</button></form></div>
             <p class="t-caption t-muted">Вернём 13% через налоговый вычет — справку выдаём бесплатно</p>
           </div>
-          <a class="btn btn--primary btn--block" href="#">Оплатить 7 600 ₽</a>
+          <a class="btn btn--primary btn--block" href="#" data-order-pay>Оплатить 7 600 ₽</a>
           <p class="t-caption t-muted">Оплата картой МИР, Visa, Mastercard или по счёту для организаций. Договор-оферта отправляется на email.</p>
         </aside>
       </div>
     </section>
 '''
-    sticky = f'<div class="sticky-cta sticky-cta--always"><div><p class="t-h4">7 600 ₽</p><p class="t-caption t-muted">Онлайн</p></div><a class="btn btn--primary" href="{sticky_href}">{sticky_label}</a></div>'
+    sticky = f'<div class="sticky-cta sticky-cta--always"><div><p class="t-h4" data-order-total>7 600 ₽</p><p class="t-caption t-muted" data-order-format>Онлайн</p></div>{sticky_btn}</div>'
     return page(f"checkout-{step}.html", f"Оформление заявки — шаг {step} из 3 | МЦПО", "Оформление заявки на курс МЦПО.", body, "", [], cr, sticky)
 
 # ======================= Курсы для врачей =======================
@@ -1252,13 +1408,10 @@ def doctors():
 
     courses = DOCTOR_COURSES
 
-    def fgroup(title, opts, checked=()):
-        return f'<fieldset class="filter-group"><legend>{title}</legend>' + "".join(f'<label class="check"><input type="checkbox" name="f"{" checked" if i in checked else ""}><span class="check__box"></span><span>{o}</span></label>' for i,o in enumerate(opts)) + '</fieldset>'
-
-    steps = [("num-1","Оставляете заявку","Методист уточняет вашу специальность и действующий сертификат, подбирает программу и присылает договор."),
+    steps =[("num-1","Оставляете заявку","Методист уточняет вашу специальность и действующий сертификат, подбирает программу и присылает договор."),
              ("num-2","Учитесь на платформе","Лекции, материалы и промежуточные тесты доступны круглосуточно. Темп внутри срока задаёте сами."),
              ("num-3","Получаете документ","После итогового тестирования выдаём удостоверение или диплом и вносим сведения в ФИС ФРДО.")]
-    steps_html = "".join(f'<article class="whom-card reveal"><div class="whom-card__head">{img(i,"",120,128)}<h3>{t}</h3></div><p class="t-body-s t-muted">{d}</p></article>' for i,t,d in steps)
+    steps_html = "".join(f'<article class="whom-card reveal"><div class="whom-card__head">{img(i,"",147,192)}<h3>{t}</h3></div><p class="t-body-s t-muted">{d}</p></article>' for i,t,d in steps)
 
     faq_html, faq_ld = faq_block("Вопросы врачей об обучении", DOCTORS_FAQ, "docfaq")
 
@@ -1270,14 +1423,13 @@ def doctors():
       {groups_html}
       <div class="catalog">
         {catalog_filters(price_group("от 2 500", "до 40 000")
-                         + fgroup("Объём программы",["36 часов","144 часа","250–504 часа","Более 504 часов"],(1,))
-                         + fgroup("Документ",["Удостоверение о ПК","Диплом о переподготовке","Свидетельство НМО"],(0,))
-                         + fgroup("Формат",["Дистанционно","Очно в Москве","Индивидуально"],(0,)), "Показать программы")}
+                         + check_group("Объём программы",["36 часов","144 часа","250–504 часа","Более 504 часов"])
+                         + check_group("Документ",["Удостоверение о ПК","Диплом о переподготовке","Свидетельство НМО"])
+                         + check_group("Формат",["Дистанционно","Очно в Москве","Индивидуально"]), "Показать программы")}
         <div class="catalog__results">
           {catalog_mobile_bar("Курсы для врачей", groups)}
-          <div class="catalog__bar"><h2 class="t-h3">Терапия и общая практика</h2><button class="btn btn--outline btn--m catalog__filter-btn" type="button" data-open="filters">{icon("filter","icon icon--sm")}<span>Фильтры<span data-filter-count-wrap> (<span data-filter-count>2</span>)</span></span></button><span class="t-body-s t-muted">Найдено 52 программы</span></div>
-          <div class="grid grid-3" data-stagger>{"".join(course_card(*c, btn="Записаться") for c in courses)}</div>
-          <div class="row" style="justify-content:center"><button class="btn btn--outline" type="button">Показать ещё 18 курсов</button></div>
+          {catalog_bar("Терапия и общая практика", "Найдено 52 программы")}
+          <div class="grid catalog__grid" data-stagger>{"".join(course_card(*c, btn="Записаться") for c in courses)}</div>
         </div>
       </div>
     </section>
@@ -1444,7 +1596,7 @@ def accreditation():
       <h1>Аккредитация медицинских работников в Москве</h1>
       <p class="intro__lead">МЦПО — аккредитационный центр: принимаем первичную и первичную специализированную аккредитацию по медицинскому массажу, сестринскому делу и сестринскому делу в косметологии и готовим к этапам процедуры. Запись на ближайшие даты — за пару минут.</p>
       <div class="hero__actions"><a class="btn btn--primary btn--l" href="#lead">Записаться на аккредитацию</a><a class="btn btn--outline btn--l" href="#accred-courses">К курсам подготовки</a></div>
-      <div class="intro__media reveal">{img("hero","Занятие в учебном корпусе МЦПО у метро Автозаводская",1404,1300,lazy=False)}</div>
+      <div class="intro__media reveal">{img("accred-hero","Отработка сердечно-лёгочной реанимации на манекене — практический этап аккредитации",1376,768,lazy=False)}</div>
     </section>
 
     <section class="section container" aria-labelledby="pains-title">
@@ -1531,20 +1683,16 @@ def teacher_profile():
 
     # Левый столбец — список курсов преподавателя, активный подсвечен
     lst = "".join(
-        f'<a href="{"#c" + str(i) if i < 2 else "#"}"{A_CUR_TRUE if i == 0 else ""}>{n}</a>'
+        f'<a href="#c{i}"{A_CUR_TRUE if i == 0 else ""}>{n}</a>'
         for i, (n, h) in enumerate(SELYAVIN_COURSES))
 
     def card(i, title, hrs):
-        rows = [("19 октября 2026", "Пн, Ср, Пт", True), ("26 октября 2026", "Вт, Чт", False), ("31 октября 2026", "Сб, Вс", False)]
-        r = "".join(
-            f'<tr{CLS_SOON if s else ""}><td data-label="Дата">{d}</td><td data-label="Дни">{dy}</td>'
-            f'<td data-label="Время">09:00–15:00</td><td data-label="Стоимость">38 700 ₽</td>'
-            f'<td><a class="btn btn--primary" href="#lead">Записаться</a></td></tr>' for d, dy, s in rows)
+        r = sched_rows()
         return f'''<article class="sched-course reveal" id="c{i}">
-          <div class="sched-course__head"><h3>{title}</h3><span class="badge badge--outline">{hrs}</span></div>
+          <div class="sched-course__head"><h3><a href="{READY_COURSE}">{title}</a></h3><span class="badge badge--outline">{hrs}</span></div>
           {tabs(["Октябрь","Ноябрь","Декабрь"],0,"Месяц")}
           <table class="schedule-table"><thead><tr><th scope="col">Дата</th><th scope="col">Дни</th><th scope="col">Время</th><th scope="col">Стоимость</th><th><span class="visually-hidden">Запись</span></th></tr></thead><tbody>{r}</tbody></table>
-          <button class="link t-body-s" type="button" style="align-self:center">Показать ещё даты</button>
+          {MORE_DATES_BTN}
         </article>'''
 
     person_ld = {
@@ -1586,7 +1734,7 @@ def teacher_profile():
       <div class="section-head reveal"><h2 class="section-head__title" id="tsched-title">Расписание курсов с этим преподавателем</h2><p class="section-head__lead">Понравился преподаватель? Запишитесь к нему на курс и проверьте его в деле.</p></div>
       <div class="sched-layout">
         <nav class="course-list" aria-label="Курсы преподавателя">{lst}</nav>
-        <div class="stack gap-2xl">{card(0, SELYAVIN_COURSES[0][0], SELYAVIN_COURSES[0][1])}{card(1, SELYAVIN_COURSES[1][0], SELYAVIN_COURSES[1][1])}</div>
+        <div class="stack gap-2xl">{"".join(card(i, n, h) for i, (n, h) in enumerate(SELYAVIN_COURSES))}</div>
       </div>
     </section>
 
@@ -1992,7 +2140,7 @@ def employment():
         <div class="jobs-learn__col">
           <h2 class="t-h1">Учебные материалы всегда под рукой</h2>
           <p class="jobs-learn__text">Вы можете проходить обучение в мобильном приложении платформы прямо с телефона — весь прогресс сохранится</p>
-          <a class="store-badge-img" href="#"><img src="assets/icons/rustore-badge-dark.svg" alt="Скачайте из RuStore" width="172" height="61"></a>
+          {store_badges()}
           <div class="jobs-learn__phone">{img("jobs-phone", "Мобильное приложение платформы МЦПО", 706, 464)}</div>
         </div>
       </div>
@@ -2030,29 +2178,30 @@ def _same_course(a, b):
     return bool(ha) and ha == hb and ba.split()[0] == bb.split()[0]
 
 def search_index():
+    # «Подробнее» в выдаче ведёт на страницу курса — пока у всех курсов это READY_COURSE
     items, keys = [], []
-    for t, m, old, price, badges, image in POPULAR + MASSAGE_COURSES + DOCTOR_COURSES:
-        key = _search_key(t, badges)
-        if any(_same_course(key, k) for k in keys):
-            continue
-        keys.append(key)
-        href = READY_COURSE if t.startswith("Классический массаж с нуля") else ""
-        items.append({"t": t, "m": m, "o": old, "p": price, "b": [list(b) for b in badges], "i": image, "h": href})
+    for src in (POPULAR, MASSAGE_COURSES, DOCTOR_COURSES):
+        for t, m, old, price, badges, image in src:
+            key = _search_key(t, badges)
+            if any(_same_course(key, k) for k in keys):
+                continue
+            keys.append(key)
+            items.append({"t": t, "m": m, "o": old, "p": price, "b": [list(b) for b in badges], "i": image, "h": READY_COURSE})
     seen = set()
     for _fid, fname, _fimg, dirs in CATALOG:
         for _did, dname, _dimg, courses in dirs:
             for cname, cimg in courses:
                 key = _search_key(cname)
-                if cname in seen or any(_same_course(key, k) for k in keys):
+                if any(_same_course(key, k) for k in keys) or cname in seen:
                     continue
                 seen.add(cname)
                 meta = fname if dname == fname else f"{fname} · {dname}"
                 badges = [["hours", f"{key[1]} ак. ч."]] if key[1] else []
-                href = READY_COURSE if cname.startswith("Классический массаж с нуля") else ""
-                items.append({"t": cname, "m": meta, "o": "", "p": "", "b": badges, "i": cimg, "h": href})
+                items.append({"t": cname, "m": meta, "o": "", "p": "", "b": badges, "i": cimg, "h": READY_COURSE})
     js = ("/* Сгенерировано docs/build.py (search_index) — руками не править.\n"
           "   Курсы для живого поиска в шапке, окно #modal-search. main.js подгружает файл при первом открытии окна.\n"
-          "   t — название, m — подпись, o — старая цена, p — цена, b — бейджи, i — картинка, h — страница курса. */\n"
+          "   t — название, m — подпись, o — старая цена, p — цена, b — бейджи, i — картинка,\n"
+          "   h — страница курса (пока у всех одна — READY_COURSE; пусто — кнопка неактивна). */\n"
           "window.MZPO_COURSES = " + json.dumps(items, ensure_ascii=False, separators=(",", ":")).replace("},{", "},\n{") + ";\n")
     with open(os.path.join(OUT, "assets", "js", "search-index.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write(js)

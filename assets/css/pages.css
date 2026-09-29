@@ -82,13 +82,12 @@
     grid-template-columns: 1fr;
     grid-template-areas: "diploma" "loyalty" "teachers" "access" "format" "approach";
   }
-  /* Вертикальный слайдер (main.js, [data-focus-list]): карточка у середины экрана
-     в полный размер, соседние уменьшены и приглушены. Страница мягко прилипает
-     к карточкам — листаются по одной. Появление при прокрутке здесь не нужно. */
-  html.has-focus-snap { scroll-snap-type: y proximity; }
+  /* Карточка у середины экрана в полный размер, соседние уменьшены и приглушены (main.js,
+     [data-focus-list]). Страница листается как обычно — прилипания к карточкам нет, его
+     убрали по просьбе заказчика 29.09. Появление при прокрутке здесь не нужно. */
   /* первая карточка («Удостоверение в ФИС ФРДО») — вертикальное фото 4:5 (<picture> в build.py) */
   .feature__media--tall-m { aspect-ratio: 4 / 5; }
-  .bento.is-focus > .feature { scroll-snap-align: center; transform-origin: 50% 50%; transition: transform .2s linear, opacity .2s linear; transition-delay: 0s; will-change: transform, opacity; }
+  .bento.is-focus > .feature { transform-origin: 50% 50%; transition: transform .2s linear, opacity .2s linear; transition-delay: 0s; will-change: transform, opacity; }
 }
 
 /* ---------- Documents ---------- */
@@ -130,19 +129,32 @@
 @media (max-width: 767px) { .logos { justify-content: center; gap: 20px; } .logos img { height: 56px; } }
 
 /* ---------- Catalog (faculty) ---------- */
-.catalog { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+.catalog { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
 .catalog__filters { display: flex; flex-direction: column; gap: 16px; }
 /* wrap + min-width: 0 — заголовок сжимается и переносится, а не выталкивает
-   кнопку фильтров и счётчик за пределы полосы (на 768 px не хватало ~50 px) */
+   кнопку фильтров и счётчик за пределы полосы (на 768 px не хватало ~50 px).
+   Кнопка «Фильтры» прижата к счётчику справа: на компьютере она не сдвигается, когда слева
+   открывается колонка, — второе нажатие приходится туда же */
 .catalog__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-radius: 16px; background: var(--color-bg-surface); }
 .catalog__bar h2 { min-width: 0; }
 .catalog__results { display: flex; flex-direction: column; gap: 20px; }
-.catalog__filter-btn { display: none; }
-/* Фильтры (catalog_filters в build.py): на компьютере — колонка слева */
+.catalog__filter-btn, .catalog__filter-toggle { display: none; margin-left: auto; }
+/* Фильтры (catalog_filters в build.py): на компьютере — колонка слева, по умолчанию скрыта.
+   Показывает и прячет её .catalog__filter-toggle (main.js, класс .is-filters-open у .catalog) */
 .catalog__filters-overlay { display: none; }
 .catalog__filters-panel { display: flex; flex-direction: column; gap: 16px; }
+@media (min-width: 1200px) {
+  .catalog__filters { display: none; }
+  .catalog.is-filters-open { grid-template-columns: 300px minmax(0, 1fr); }
+  .catalog.is-filters-open .catalog__filters { display: flex; }
+  .catalog__filter-toggle { display: inline-flex; }
+  .catalog__filter-toggle[aria-expanded="true"] { --btn-bg: var(--color-bg-inverse); --btn-fg: var(--color-text-inverse); }
+  /* открытая колонка сужает полосу: переносится название, а кнопка со счётчиком остаются в строке и на месте */
+  .catalog__bar { flex-wrap: nowrap; }
+  .catalog__bar h2 { flex: 1 1 auto; }
+  .catalog__bar > .t-muted, .catalog__filter-toggle { flex: none; white-space: nowrap; }
+}
 @media (max-width: 1199px) {
-  .catalog { grid-template-columns: 1fr; }
   /* Планшет и телефон: фильтры — модальное окно. Закрытое скрыто через visibility и стоит
      внутри экрана: прежняя выезжающая панель лежала за правым краем и растягивала
      страницу на телефоне до 735 px — браузер показывал её уменьшенной. */
@@ -176,25 +188,29 @@
 .dir-select__native { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
 .filter-btn { position: relative; }
 .filter-btn__count { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--color-bg-inverse); color: var(--color-text-inverse); font-size: 12px; line-height: 20px; text-align: center; }
-/* Колонки каталога считаем с оглядкой на сайдбар: он забирает 320 px, и до
-   1500 px три карточки сжимаются до 220–305 px — кнопка со ссылкой в подвале
-   карточки перестают помещаться в строку. */
-@media (max-width: 1499px) { .catalog__results .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 767px)  { .catalog__results .grid-3 { grid-template-columns: 1fr; } }
+/* Колонки каталога. Уже ~305 px кнопка со ссылкой в подвале карточки перестают помещаться
+   в строку, поэтому без фильтров 4 в ряд (как «Популярные курсы» на главной) только с 1600 px.
+   Открытая колонка фильтров забирает 320 px — карточек в ряду на одну меньше, до 1500 px две. */
+.catalog__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1599px) { .catalog__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1199px) { .catalog__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px)  { .catalog__grid { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 1500px) { .catalog.is-filters-open .catalog__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1200px) and (max-width: 1499px) { .catalog.is-filters-open .catalog__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .filters-head { display: none; }
 @media (max-width: 1199px) { .filters-head { display: flex; justify-content: space-between; align-items: center; } }
 
 /* ---------- For whom ---------- */
 .whom-card { display: flex; flex-direction: column; gap: 16px; padding: 32px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
 .whom-card__head { display: flex; align-items: center; gap: 16px; }
-.whom-card__head img { width: 60px; height: 64px; object-fit: contain; flex: none; transition: transform var(--dur-slow) var(--ease-out); }
+.whom-card__head img { width: 49px; height: 64px; object-fit: contain; flex: none; transition: transform var(--dur-slow) var(--ease-out); }
 
-@media (max-width: 767px) { .whom-card { padding: 18px 16px; } .whom-card__head img { width: 44px; height: 48px; } }
+@media (max-width: 767px) { .whom-card { padding: 18px 16px; } .whom-card__head img { width: 37px; height: 48px; } }
 
 /* ---------- Perspectives ---------- */
 .persp { display: grid; grid-template-columns: 290px 1fr 1fr; gap: 20px; }
 .persp__card { display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
-.persp__card img { margin-top: 10px; border-radius: 16px; aspect-ratio: 290 / 216; object-fit: cover; }
+.persp__card img { width: 100%; height: clamp(150px, 11.25vw, 216px); margin-top: 10px; border-radius: 16px; object-fit: cover; object-position: 50% var(--pos-y, 50%); }
 @media (max-width: 1199px) { .persp { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 767px) { .persp { grid-template-columns: 1fr 1fr; gap: 12px; } .persp__card { padding: 16px; } .persp__card--photo { grid-column: 1 / -1; } .persp__card:not(.persp__card--photo) { order: -1; } .persp .t-display { font-size: var(--font-h1); line-height: var(--line-h1); } }
 
@@ -211,7 +227,9 @@
 @media (max-width: 767px) { .expert { grid-template-columns: 1fr; } .expert__photo { aspect-ratio: 343 / 300; } .expert__card { padding: 20px; } }
 
 /* ---------- Course hero ---------- */
-.course-hero { position: relative; display: grid; grid-template-columns: 1fr 440px; align-items: center; gap: 40px; padding: 36px 70px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
+/* minmax(0, 1fr), а не 1fr: иначе колонка растёт до min-content формы (поле телефона с маской)
+   и на телефоне текст, кнопка и форма уезжали за правый край карточки на 17 px — как было с окном заявки */
+.course-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 440px; align-items: center; gap: 40px; padding: 36px 70px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
 .course-hero > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
 .course-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(28,38,59,.58); }
 .course-hero__copy { display: flex; flex-direction: column; gap: 22px; }
@@ -221,10 +239,9 @@
 .bullets li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--color-bg-accent); }
 .course-hero__form { display: flex; flex-direction: column; gap: 14px; padding: 28px; border-radius: var(--radius-md); background: var(--color-bg-page); color: var(--color-text-primary); }
 .price-line { display: none; }
-@media (max-width: 1199px) { .course-hero { grid-template-columns: 1fr; padding: 40px; } }
+@media (max-width: 1199px) { .course-hero { grid-template-columns: minmax(0, 1fr); padding: 40px; } }
 @media (max-width: 767px) {
   .course-hero { padding: 24px 20px; }
-  .course-hero .btn--outline-inverse { display: none; }
   .course-hero__actions .btn { width: 100%; }
   .course-hero__form { padding: 20px 16px; border-radius: var(--radius-md); }
   .price-line { display: flex; align-items: baseline; gap: 10px; }
@@ -254,10 +271,65 @@
 @media (max-width: 1199px) { .salary { grid-template-columns: 1fr; } .salary img { display: none; } }
 @media (max-width: 767px) { .salary { padding: 24px 16px; } .salary__bar { min-height: 56px; padding: 6px 14px; } }
 
+/* ---------- Тарифы курса (tariffs_block в build.py; в ките — раздел «02 · Components — блок „Тарифы“») ----------
+   Три белые карточки на тёмной панели, главная — очно в группе: бирюзовая рамка, «Рекомендуем»,
+   бирюзовая кнопка. Снизу широкая тёмная «Индивидуально». */
+.tariffs { display: flex; flex-direction: column; gap: var(--space-2xl); padding: var(--space-3xl); border-radius: var(--radius-lg); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.tariffs__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3xl); }
+.tariffs__lead { max-width: 560px; font-size: var(--font-body-m); line-height: var(--line-body-m); opacity: .7; }
+.tariffs__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-lg); }
+.tariff-card { display: flex; flex-direction: column; gap: var(--space-md); padding: var(--space-xl); border-radius: var(--radius-md); background: var(--color-bg-page); color: var(--color-text-primary); }
+.tariff-card--main { box-shadow: inset 0 0 0 2px var(--color-border-accent); }
+.tariff-card__head { display: flex; flex-direction: column; gap: var(--space-xs); }
+.tariff-card__title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
+/* размеры шрифтов — как у карточек курсов: название H4, старая цена Caption; цена H3, как в корзине на телефоне */
+.tariff-card h3, .tariff-wide h3 { font-size: var(--font-h4); line-height: var(--line-h4); }
+/* описание в 2 строки у всех — цены и списки встают на одной высоте */
+.tariff-card__desc { min-height: calc(var(--line-body-s) * 2); font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
+.tariff-price { display: flex; flex-direction: column; gap: 2px; font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); white-space: nowrap; }
+.tariff-price s { font-size: var(--font-caption); line-height: var(--line-caption); }
+.tariff-price span { display: flex; align-items: baseline; gap: 8px; }
+.tariff-price b { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-bold); color: var(--color-text-primary); }
+.tariff-price--inverse s { color: rgba(255, 255, 255, .5); }
+.tariff-price--inverse span { color: rgba(255, 255, 255, .7); }
+.tariff-price--inverse b { color: var(--color-text-inverse); }
+.tariff-card__list { padding-top: var(--space-md); border-top: 1px solid var(--color-border-default); }
+/* двойной класс: общее правило .checklist ниже по файлу и иначе перебивает модификаторы */
+.checklist.checklist--s li { font-size: var(--font-body-s); line-height: var(--line-body-s); }
+/* кнопка внизу карточки: карточки в ряду одной высоты, кнопки на одной линии */
+.tariff-card .btn { align-self: flex-start; margin-top: auto; }
+.tariff-wide { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3xl); padding: var(--space-xl); border-radius: var(--radius-md); background: var(--color-bg-inverse-soft); }
+.tariff-wide__info { display: flex; flex-direction: column; gap: var(--space-sm); }
+.tariff-wide h3 { color: var(--color-bg-accent); }
+.tariff-wide__info > p { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .7; }
+.checklist.checklist--row { flex-direction: row; flex-wrap: wrap; gap: 12px 28px; padding-top: var(--space-xs); }
+.tariff-wide__buy { flex: none; display: flex; align-items: center; gap: var(--space-2xl); }
+/* планшет: главная карточка во всю ширину сверху, две другие под ней */
+@media (max-width: 1199px) {
+  .tariffs__head { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+  .tariffs__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tariff-card--main { grid-column: 1 / -1; order: -1; }
+  .tariff-wide { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 767px) {
+  .tariffs__lead { font-size: var(--font-body-s); line-height: var(--line-body-s); }
+  .tariffs__cards { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
+  .tariff-card__desc { min-height: 0; }
+  .checklist.checklist--row { flex-direction: column; gap: 10px; }
+  .tariff-wide__buy { flex-direction: column; align-items: stretch; align-self: stretch; gap: var(--space-md); }
+}
+
 /* ---------- Live learning ---------- */
 .live { display: grid; grid-template-columns: 1fr 526px; align-items: center; gap: 40px; padding: 24px 24px 24px 40px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .live img { border-radius: var(--radius-md); aspect-ratio: 526 / 401; object-fit: cover; }
 @media (max-width: 1199px) { .live { grid-template-columns: 1fr; padding: 24px; } }
+/* Телефон: пять вкладок «Практика … Видео» не помещались в ряд — «Материалы» и «Видео» прятались
+   за краем. Переносим в две строки, каждая вкладка — отдельная плашка */
+@media (max-width: 767px) {
+  .live__tabs { flex-wrap: wrap; width: auto; padding: 0; gap: 8px; border-radius: 0; background: none; overflow: visible; }
+  .live__tabs .tab { background: var(--color-bg-surface); }
+  .live__tabs .tab.is-active, .live__tabs .tab[aria-selected="true"] { background: var(--color-bg-inverse); }
+}
 
 /* ---------- Schedule page ---------- */
 .filter-bar { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; align-items: end; gap: 24px; padding: 28px; border-radius: var(--radius-md); background: var(--color-bg-inverse); color: var(--color-text-inverse); }
@@ -272,8 +344,29 @@
 .sched-course { display: flex; flex-direction: column; gap: 20px; padding: 36px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .sched-course__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
 .sched-course__head .badge { flex: none; }
+/* название курса в графике ведёт на страницу курса */
+.sched-course__head a { transition: color var(--dur-fast); }
+@media (hover: hover) { .sched-course__head a:hover { color: var(--color-text-accent); } }
 @media (max-width: 1199px) { .filter-bar { grid-template-columns: 1fr 1fr; } .sched-layout { grid-template-columns: 1fr; } .course-list { display: none; } }
 @media (max-width: 767px) { .filter-bar { grid-template-columns: 1fr; padding: 20px 16px; gap: 14px; } .sched-course { padding: 20px 16px; } .sched-course__head { flex-direction: column; } }
+/* Фильтры расписания. Компьютер и планшет — тёмная полоса, как было (обёртка без своего блока).
+   Телефон — над расписанием строка «направление + значок фильтров» (.catalog__mobile-bar),
+   форма обучения, дни и стоимость — в окне во весь экран с кнопками внизу. */
+.sched-filters__layer { display: contents; }
+.sched-filters__overlay, .sched-filters__head { display: none; }
+@media (max-width: 767px) {
+  .sched-filters__layer { position: fixed; inset: 0; z-index: 200; display: block; visibility: hidden; transition: visibility 0s linear var(--dur-base); }
+  .sched-filters__layer.is-open { visibility: visible; transition-delay: 0s; }
+  .sched-filters__overlay { display: block; position: absolute; inset: 0; background: rgba(28, 38, 59, .72); opacity: 0; transition: opacity var(--dur-base); }
+  .sched-filters__layer.is-open .sched-filters__overlay { opacity: 1; }
+  .sched-filters__layer .filter-bar { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 16px; height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 16px 16px 0; border-radius: 0; background: var(--color-bg-page); color: var(--color-text-primary); opacity: 0; transform: translateY(16px); transition: opacity var(--dur-base), transform var(--dur-base) var(--ease-out); }
+  .sched-filters__layer.is-open .filter-bar { opacity: 1; transform: none; }
+  .sched-filters__head { display: flex; justify-content: space-between; align-items: center; }
+  .sched-filters__layer .filter-bar label { gap: 12px; padding: 16px; border-radius: var(--radius-sm); background: var(--color-bg-surface); font-weight: var(--fw-medium); }
+  .sched-filters__layer .filter-bar .filter-bar__dir { display: none; }
+  .sched-filters__layer .filter-bar__actions { position: sticky; bottom: 0; margin-top: auto; align-items: stretch; padding: 12px 0 20px; background: var(--color-bg-page); }
+  .sched-filters__layer .filter-bar__actions .btn { width: 100%; }
+}
 
 /* ---------- Events ---------- */
 .events-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
@@ -301,6 +394,23 @@
 .checkout .summary__media { aspect-ratio: 388 / 140; }
 .checkout .summary .t-h3 { font-size: var(--font-h4); line-height: var(--line-h4); }
 .checkout .summary .t-h2 { font-size: var(--font-h3); line-height: var(--line-h3); }
+/* «Есть промокод?» (заказ справа при оформлении): по нажатию ссылка сменяется полем «Введите промокод»
+   с круглой кнопкой-стрелкой (main.js). Поле — как .field__control, разворачивается слева направо,
+   кнопка появляется следом. Проверку промокода сделает бэкенд. */
+.promo-code { display: flex; flex-direction: column; align-items: flex-start; }
+.promo-code__form { align-self: stretch; padding: 0 6px 0 20px; animation: promo-open .45s var(--ease-out) both; }
+.promo-code__input { flex: 1; min-width: 0; height: calc(var(--layout-input-h) - 2px); border: 0; outline: 0; background: none; font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-primary); }
+.promo-code__input::placeholder { color: var(--color-text-muted); }
+/* фокус показывает рамка всего поля (.field__control:focus-within), общая рамка :focus-visible на самом input — лишняя */
+.promo-code__input:focus, .promo-code__input:focus-visible { outline: none; box-shadow: none; border-radius: 0; }
+.promo-code__apply { animation: promo-pop .35s .2s var(--ease-out) both; }
+.promo-code__apply .icon { transition: transform var(--dur-fast) var(--ease-out); }
+@media (hover: hover) {
+  .promo-code__apply:hover { transform: none; background: var(--color-bg-accent-strong); color: var(--color-text-inverse); }
+  .promo-code__apply:hover .icon { transform: translateX(2px); }
+}
+@keyframes promo-open { from { opacity: 0; clip-path: inset(0 100% 0 0 round 999px); } to { opacity: 1; clip-path: inset(0 0 0 0 round 999px); } }
+@keyframes promo-pop { from { opacity: 0; transform: scale(.6); } }
 .format-options { display: flex; flex-direction: column; gap: 12px; max-width: 580px; }
 .format-option { display: flex; align-items: center; gap: 16px; padding: 14px 22px; border-radius: 16px; background: var(--color-bg-page); border: 2px solid transparent; cursor: pointer; transition: border-color var(--dur-fast); }
 @media (hover: hover) { .format-option:hover { border-color: var(--color-border-default); } }
@@ -315,6 +425,38 @@
 .choice-row input:checked + span { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
 .choice-row input:focus-visible + span { box-shadow: var(--focus-ring); }
 .checkout__next { align-self: flex-end; }
+/* ---------- Календарь старта очной группы (start_picker в build.py, main.js) ----------
+   По образцу заказчика, в стиле кита: белая карточка как у форм обучения, полоса месяцев со стрелками,
+   даты с днём недели и время. Выбранное — тёмно-синее, как «таблетки» выбора и активные вкладки.
+   --sp-bg / --sp-cell — фон карточки и ячеек: на телефоне шаг без серой подложки, поэтому они меняются местами. */
+.start-picker { --sp-bg: var(--color-bg-page); --sp-cell: var(--color-bg-surface); display: flex; flex-direction: column; gap: var(--space-xl); min-width: 0; max-width: 580px; margin: 0; padding: var(--space-xl); border: 0; border-radius: 16px; background: var(--sp-bg); animation: fade-in .3s var(--ease-out) both; }
+.start-picker__months { display: flex; align-items: center; gap: var(--space-xs); padding: 6px; border-radius: var(--radius-full); background: var(--sp-cell); }
+.start-picker__months .icon-btn { flex: none; }
+.start-picker__months .icon-btn[disabled] { opacity: .4; pointer-events: none; }
+.start-picker__month-list { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xs); }
+.start-picker__month { min-width: 0; padding: 10px 8px; border-radius: var(--radius-full); background: var(--sp-bg); color: var(--color-text-secondary); font-size: var(--font-button-m); line-height: var(--line-button-m); font-weight: var(--fw-semibold); transition: background-color var(--dur-fast), color var(--dur-fast); }
+.start-picker__month.is-active { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.start-picker__days { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-md) var(--space-3xl); }
+.start-picker__day { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); cursor: pointer; }
+.start-picker__time { position: relative; cursor: pointer; }
+.start-picker input { position: absolute; opacity: 0; pointer-events: none; }
+.start-picker__wd { font-size: var(--font-body-s); line-height: var(--line-body-s); font-weight: var(--fw-medium); color: var(--color-text-muted); transition: color var(--dur-fast); }
+.start-picker__num { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--sp-cell); font-size: var(--font-body-m); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; transition: background-color var(--dur-fast), color var(--dur-fast); }
+.start-picker__times { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-sm); }
+.start-picker__time span { display: inline-block; padding: 8px 22px; border-radius: var(--radius-full); background: var(--sp-cell); font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; transition: background-color var(--dur-fast), color var(--dur-fast); }
+.start-picker__day input:checked ~ .start-picker__num, .start-picker__time input:checked + span { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.start-picker__day input:checked ~ .start-picker__wd { color: var(--color-text-primary); }
+.start-picker__day input:focus-visible ~ .start-picker__num, .start-picker__time input:focus-visible + span, .start-picker__month:focus-visible { box-shadow: var(--focus-ring); }
+@media (hover: hover) {
+  .start-picker__month:not(.is-active):hover, .start-picker__day:hover input:not(:checked) ~ .start-picker__num,
+  .start-picker__time:hover input:not(:checked) + span { background: var(--color-bg-accent-soft); }
+}
+@media (max-width: 767px) {
+  .start-picker { --sp-bg: var(--color-bg-surface); --sp-cell: var(--color-bg-page); padding: var(--space-md); }
+  /* все три месяца и так видны кнопками — стрелки на узком экране только отнимали место у названий */
+  .start-picker__months .icon-btn { display: none; }
+  .start-picker__days { gap: var(--space-md) var(--space-xl); }
+}
 .checkout__mini { display: none; }
 @media (max-width: 1199px) { .checkout { grid-template-columns: 1fr; } .summary { position: static; } }
 @media (max-width: 767px) { .checkout__mini { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--color-bg-surface); } .checkout__step { padding: 0; background: none; gap: 20px; } .checkout__side .summary, .checkout__side > .btn { display: none; } .checkout__next { display: none; } }
@@ -561,10 +703,6 @@
 .jobs-learn__col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-xl); }
 .jobs-learn__sub { font-size: var(--font-h3); line-height: var(--line-h3); font-weight: var(--fw-medium); }
 .jobs-learn__text { font-size: var(--font-body-m); line-height: var(--line-body-m); color: var(--color-text-secondary); }
-/* Фирменный значок RuStore из кита (App Badge / RuStore, Dark) */
-.store-badge-img { display: inline-block; border-radius: 6px; transition: transform var(--dur-fast) var(--ease-out); }
-@media (hover: hover) { .store-badge-img:hover { transform: translateY(-2px); } }
-.store-badge-img img { width: 172px; height: 61px; }
 .jobs-learn__phone { align-self: stretch; display: flex; justify-content: flex-end; }
 .jobs-learn__phone img { width: min(520px, 100%); height: auto; }
 

@@ -118,7 +118,9 @@
 }
 .field__control:focus-within { border-color: var(--color-border-accent); }
 .field__input:focus, .field__input:focus-visible { outline: none; box-shadow: none; border-radius: 0; }
-.field__input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: var(--font-body-m); line-height: var(--line-body-m); padding: 12px 0; }
+/* цвет задан явно: иначе поле наследует белый текст формы на тёмном фоне (подвал, «Остались вопросы?»)
+   и введённое не видно на белом поле; в ките у заполненного поля — text/primary */
+.field__input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--color-text-primary); font-size: var(--font-body-m); line-height: var(--line-body-m); padding: 12px 0; }
 .field__input::placeholder { color: var(--color-text-muted); }
 .field__prefix { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-right: 1px solid var(--color-border-default); color: var(--color-text-primary); font-size: var(--font-body-s); }
 .flag-ru { width: 20px; height: 14px; border-radius: 2px; background: linear-gradient(#fff 0 33.3%, #0039a6 33.3% 66.6%, #d52b1e 66.6%); box-shadow: 0 0 0 .5px var(--color-border-default); }
@@ -346,7 +348,8 @@
 
 /* ---------- Card base (hover lift) ---------- */
 .card-hover { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
-@media (hover: hover) { .card-hover:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); } }
+/* Карточка курса при наведении приподнимается едва заметно: 2 px и мягкая тень (заказчик, 29.09; было 4 px и --shadow-hover) */
+@media (hover: hover) { .card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); } }
 .media-zoom { overflow: hidden; }
 /* backface-visibility поднимает картинку в отдельный слой — масштаб идёт
    на композиторе, без перерисовки на основном потоке */
@@ -502,22 +505,18 @@
 .faq, .module { border-radius: var(--radius-sm); background: var(--color-bg-surface); border: 1px solid transparent; overflow: hidden; transition: background-color .45s var(--ease-out), border-color .45s var(--ease-out), box-shadow .45s var(--ease-out); }
 /* Закрытый вопрос при наведении мягко подсвечивается светло-бирюзовым, текст остаётся
    тёмным, стрелка в кружке становится бирюзовой. Прежнее перекрашивание в тёмно-синий
-   с белым текстом было слишком резким. У раскрытой карточки реагирует только стрелка. */
-@media (hover: hover) { .faq:not([open]):hover { background: var(--color-bg-accent-soft); } }
-@media (hover: hover) { .module:hover { background: var(--color-bg-inverse); border-color: transparent; box-shadow: none; color: var(--color-text-inverse); } }
-@media (hover: hover) { .module:hover .module__title { color: var(--color-text-inverse); } }
-@media (hover: hover) { .module:hover .module__content { color: rgba(255, 255, 255, .75); } }
-@media (hover: hover) { .module:hover .module__num { color: var(--color-bg-accent); } }
-@media (hover: hover) { .module:hover .module__hours { color: rgba(255, 255, 255, .6); } }
+   с белым текстом было слишком резким. У раскрытой карточки реагирует только стрелка.
+   Модули программы курса ведут себя так же (заказчик, 29.09). */
+@media (hover: hover) { .faq:not([open]):hover, .module:not([open]):hover { background: var(--color-bg-accent-soft); } }
 .module[open] { cursor: pointer; }
-.faq[open] { background: var(--color-bg-page); border-color: var(--color-border-default); }
-.faq__icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-page); transition: background-color .45s var(--ease-out), transform var(--dur-base) var(--ease-out); }
-.faq[open] .faq__icon { background: var(--color-bg-accent); }
-@media (hover: hover) { .faq:not([open]):hover .faq__icon { background: var(--color-bg-accent); } }
-.faq[open] .faq__icon { transform: rotate(180deg); }
+.faq[open], .module[open] { background: var(--color-bg-page); border-color: var(--color-border-default); }
+.faq__icon, .module__icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-page); transition: background-color .45s var(--ease-out), transform var(--dur-base) var(--ease-out); }
+.faq[open] .faq__icon, .module[open] .module__icon { background: var(--color-bg-accent); }
+@media (hover: hover) { .faq:not([open]):hover .faq__icon, .module:not([open]):hover .module__icon { background: var(--color-bg-accent); } }
+.faq[open] .faq__icon, .module[open] .module__icon { transform: rotate(180deg); }
 /* Раскрытая карточка: единственная реакция на наведение — стрелка подаётся вверх */
-@media (hover: hover) { .faq[open]:hover .faq__icon { transform: translateY(-3px) rotate(180deg); } }
-.faq summary .faq__icon .icon { transform: none !important; }
+@media (hover: hover) { .faq[open]:hover .faq__icon, .module[open]:hover .module__icon { transform: translateY(-3px) rotate(180deg); } }
+.faq summary .faq__icon .icon, .module summary .module__icon .icon { transform: none !important; }
 .faq__q { transition: color var(--dur-base) var(--ease-out); }
 .faq summary, .module summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 16px; padding: 20px 27px; }
 .faq summary::-webkit-details-marker, .module summary::-webkit-details-marker { display: none; }
@@ -534,7 +533,7 @@
 .module__content { padding: 0 20px 20px; font-size: var(--font-body-s); line-height: var(--line-body-s); }
 .module__content li { position: relative; padding-left: 16px; }
 .module__content li::before { content: "•"; position: absolute; left: 0; }
-@media (max-width: 767px) { .faq summary { padding: 16px; } .faq__q { font-size: var(--font-body-m); font-weight: var(--fw-medium); } .faq__a { padding: 0 16px 16px; } .module summary { padding: 14px; flex-wrap: wrap; gap: 4px 12px; } .module__title { flex-basis: calc(100% - 40px); order: 3; } }
+@media (max-width: 767px) { .faq summary { padding: 16px; } .faq__q { font-size: var(--font-body-m); font-weight: var(--fw-medium); } .faq__a { padding: 0 16px 16px; } .module summary { padding: 14px; flex-wrap: wrap; gap: 4px 12px; } .module__title { flex-basis: calc(100% - 40px); order: 3; } .module__icon { margin-left: auto; } }
 
 /* ---------- Schedule ---------- */
 .schedule-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; font-size: var(--font-body-m); line-height: var(--line-body-m); }
@@ -543,6 +542,9 @@
 .schedule-table td:first-child { border-radius: var(--radius-full) 0 0 var(--radius-full); }
 .schedule-table td:last-child { border-radius: 0 var(--radius-full) var(--radius-full) 0; text-align: right; padding-right: 6px; }
 .schedule-table tr { transition: transform var(--dur-fast); }
+/* «Показать ещё даты» (main.js): три дополнительные даты появляются по очереди */
+.schedule-table tr[data-extra]:not([hidden]) { animation: rows-in .35s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes rows-in { from { opacity: 0; transform: translateY(8px); } }
 @media (hover: hover) { .schedule-table tbody tr:hover td { background: var(--color-bg-surface-alt); } }
 .schedule-table .is-soon td { background: linear-gradient(90deg, var(--color-bg-inverse), var(--p-teal-900)); color: var(--color-text-inverse); background-attachment: fixed; }
 .schedule-table .is-soon td:nth-child(1) { background: var(--color-bg-inverse); }
@@ -676,7 +678,10 @@
 /* Каждый курс оформляется отдельно: строка «К оплате + Оформить» — своя у карточки.
    Она отдельной строкой сетки, чтобы на мобильном растянуться на всю ширину карточки */
 .cart-item { display: grid; grid-template-columns: 424px 1fr auto; grid-template-rows: auto 1fr; gap: 16px 40px; padding: 36px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
-.cart-item__media { grid-row: 1 / 3; border-radius: 16px; overflow: hidden; aspect-ratio: 424 / 274; }
+.cart-item__media { display: block; grid-row: 1 / 3; border-radius: 16px; overflow: hidden; aspect-ratio: 424 / 274; }
+/* фото и название ведут на страницу курса */
+.cart-item__title a { transition: color var(--dur-fast); }
+@media (hover: hover) { .cart-item__title a:hover { color: var(--color-text-accent); } }
 .cart-item__media img { width: 100%; height: 100%; object-fit: cover; }
 .cart-item__info { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 16px; }
 /* Цена и кнопка — в одну линию; про налоговый вычет — одна строка под списком курсов */
@@ -710,15 +715,25 @@
 .filter-group { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: var(--radius-sm); background: var(--color-bg-surface); border: 0; margin: 0; min-inline-size: 0; min-width: 0; }
 .filter-group legend { float: left; width: 100%; margin-bottom: 14px; font-weight: var(--fw-medium); }
 .range { display: flex; gap: 8px; }
-.range input { flex: 1; min-width: 0; width: 100%; height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--color-bg-page); }
+.range input { flex: 1; min-width: 0; width: 100%; height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--color-bg-page); color: var(--color-text-primary); }
+/* «Стоимость, ₽»: и цифры, и подсказки «от / до» — тёмные (заказчик, 29.09). Раньше подсказка была
+   бледно-серой браузерной, а в расписании цифры наследовали белый цвет тёмной полосы фильтров — на белом поле их не было видно */
+.range input::placeholder { color: var(--color-text-primary); opacity: 1; }
 
 /* ---------- Store / social ---------- */
-.store-badge { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 10px; background: var(--color-bg-page); color: var(--color-text-primary); transition: transform var(--dur-fast) var(--ease-out); }
-@media (hover: hover) { .store-badge:hover { transform: translateY(-2px); } }
-.store-badge small { display: block; font-size: 11px; line-height: 12px; }
-.store-badge b { display: block; font-size: 20px; line-height: 22px; }
-.store-badge--dark { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
-.footer__col .store-badge, .footer__col .logo { align-self: flex-start; }
+/* Приложение в магазинах: официальные значки RuStore и App Store одной высоты, рядом
+   (store_badges() в build.py). Значки — картинки из assets/icons, сами не перерисовываем. */
+.store-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.store-badge-img { display: inline-block; border-radius: 8px; transition: transform var(--dur-fast) var(--ease-out); }
+@media (hover: hover) { .store-badge-img:hover { transform: translateY(-2px); } }
+/* Высота значков 44–52 px: пара тянется по доступной ширине (ширину делим по пропорциям значков —
+   высоты равны) и не крупнее 52 px. Не помещается в строку даже по 44 px (колонка подвала на 1280–1440) —
+   App Store уходит на вторую строку, оба остаются по 52 px. */
+.store-badges { width: 100%; }
+.store-badge-img--rustore { flex: 111 1 0; min-width: 122px; max-width: 144px; }   /* 111×40: 44–52 px */
+.store-badge-img--appstore { flex: 119 1 0; min-width: 131px; max-width: 155px; }  /* 214×72 ≈ 119×40 */
+.store-badge-img img { display: block; width: 100%; height: auto; }
+.footer__col .store-badges, .footer__col .logo { align-self: flex-start; }
 
 /* ---------- Footer ---------- */
 .footer { margin-top: auto; border-radius: 32px 32px 0 0; background: var(--color-bg-inverse); color: var(--color-text-inverse); }
@@ -731,8 +746,8 @@
 .footer__cols { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 360px; gap: 60px; padding-block: 48px; }
 .footer__col { display: flex; flex-direction: column; gap: 10px; }
 .footer__col h3 { margin-bottom: 4px; font-size: var(--font-h4); line-height: var(--line-h4); }
-.footer__col a:not(.btn):not(.store-badge) { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .85; transition: opacity var(--dur-fast), color var(--dur-fast); }
-@media (hover: hover) { .footer__col a:not(.btn):not(.store-badge):hover { opacity: 1; color: var(--color-bg-accent); } }
+.footer__col a:not(.btn):not(.store-badge-img) { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .85; transition: opacity var(--dur-fast), color var(--dur-fast); }
+@media (hover: hover) { .footer__col a:not(.btn):not(.store-badge-img):hover { opacity: 1; color: var(--color-bg-accent); } }
 .footer__muted { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .7; }
 .footer__legal { font-size: var(--font-caption); line-height: var(--line-caption); opacity: .7; }
 .footer__portal { width: 300px; border-radius: 10px; background: #fff; }
@@ -774,6 +789,10 @@
 .modal.is-open .modal__icon .icon { animation: draw 0.6s 0.2s var(--ease-out) forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 body.is-locked { overflow: hidden; }
+
+/* Счётчик внутри фразы (data-count в main.js): цифры одной ширины с самого начала, во время
+   счёта main.js держит ширину итогового числа — текст рядом стоит на месте */
+.count-inline { display: inline-block; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 
 /* ---------- Окно поиска из шапки: большое, поверх всего, сверху строка поиска ---------- */
 .modal--search { --search-gap: clamp(16px, 4vh, 48px); place-items: start center; padding: var(--search-gap) var(--layout-gutter); }
@@ -868,19 +887,17 @@ body.is-locked { overflow: hidden; }
 
 /* ---------- Hero slider (листается сам, прогресс под кнопками) ---------- */
 .hero-slider__media { position: absolute; inset: 0; z-index: -2; }
-/* Медленный наезд.
-   1. Покой = scale(1), то есть конец движения. Раньше покой был scale(1.06), и при
-      смене слайда уходящая картинка начинала ехать ОБРАТНО прямо во время затухания.
-   2. Движение ведёт анимация, а не переход: у перехода стояло ease-out на 7 с —
-      почти весь ход укладывался в первые полторы секунды, дальше картинка почти
-      стояла, а на шестой секунде её обрывала смена слайда.
-   3. Длительность равна интервалу слайдера, поэтому наезд заканчивается ровно в
-      момент переключения — кадр не обрывается на полпути.
-   4. will-change только у активной: картинка уезжает в свой слой и не
-      перерисовывается на основном потоке. */
-.hero-slider__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1); backface-visibility: hidden; transition: opacity .9s var(--ease-out); }
-.hero-slider__img.is-active { opacity: 1; will-change: transform, opacity; animation: hero-zoom var(--hero-interval, 6000ms) linear forwards; }
-@keyframes hero-zoom { from { transform: scale(1.06); } to { transform: scale(1); } }
+/* Медленное «отдаление» (scale 1.07 → 1), ведёт main.js через Web Animations API.
+   1. Все картинки слайдера всё время в своих слоях (will-change). Раньше слой был только
+      у активной: на смене слайда браузер снимал его у уходящей и создавал у новой —
+      большая картинка перерисовывалась прямо во время перехода, отсюда рывок.
+   2. Наезд длится интервал + затухание и при смене слайда не обрывается: уходящая картинка
+      продолжает ехать, пока гаснет, и доезжает ровно к моменту, когда исчезла. Раньше она
+      замирала на смене и гасла неподвижной, а новая сразу ехала — глаз видел толчок.
+   3. Движение линейное и идёт в композиторе; перезапуск — у невидимой картинки, без
+      принудительного пересчёта раскладки. Покой — scale(1.07): с него наезд и начинается. */
+.hero-slider__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.07); will-change: transform, opacity; transition: opacity .9s var(--ease-out); }
+.hero-slider__img.is-active { opacity: 1; }
 .hero-slider__texts { display: grid; }
 /* Слайды лежат в одной ячейке грида, её высота = самый длинный заголовок.
    Прижимаем каждый к низу, иначе короткий заголовок повисает вверху ячейки
@@ -943,7 +960,6 @@ body.is-locked { overflow: hidden; }
 .modal__dialog--form { width: min(460px, 100%); text-align: left; align-items: stretch; gap: 20px; padding: 36px 32px 28px; }
 .lead-popup__head { display: flex; flex-direction: column; gap: 8px; padding-right: 36px; }
 .lead-popup__form { display: flex; flex-direction: column; gap: 14px; }
-.lead-popup__form .t-caption { text-align: center; }
 @media (max-width: 767px) { .modal__dialog--form { padding: 28px 20px 20px; } }
 
 /* ---------- Ссылки на неготовые страницы и кнопки-заглушки: ничего не делают, без hover ---------- */
