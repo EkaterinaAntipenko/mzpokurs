@@ -271,18 +271,22 @@ def header(active=""):
         return (f'<div class="nav__group">{trigger}'
                 f'<div class="nav__drop"><div class="nav__drop-inner">{inner}</div></div></div>')
     links = "".join(nav_item(h, t, dd) for h, t, dd in NAV)
-    # Меню на телефоне: у «Каталога курсов» и «Расписания» подпункты свёрнуты, раздел раскрывается
-    # нажатием (стрелка рядом со словом). Остальные пункты — обычные ссылки.
+    # Меню на телефоне: у «Каталога курсов», «Расписания» и «О центре» подпункты свёрнуты,
+    # раздел раскрывается нажатием (стрелка рядом со словом). Остальные пункты — обычные ссылки.
     def drawer_group(key, title, items):
         subs = "".join(f'<a class="drawer__sub" href="{sh}">{st}</a>' for sh, st in items)
         return (f'<div class="drawer__group"><button class="drawer__toggle" type="button" aria-expanded="false" aria-controls="dsub-{key}">'
                 f'<span>{title}</span>{icon("chevron-down", "icon icon--sm")}</button>'
                 f'<div class="drawer__subs" id="dsub-{key}"><div class="drawer__subs-inner">{subs}</div></div></div>')
     catalog_group = drawer_group("catalog", "Каталог курсов", [(FAC_LINKS.get(fname, "#"), fname) for _fid, fname, _fimg, _dirs in CATALOG])
-    dlinks = "".join(
-        drawer_group("schedule", t, [(h, "Всё расписание")] + SUBMENU[t]) if t == "Расписание" else
-        f'<a href="{h}">{t}</a>' + "".join(f'<a class="drawer__sub" href="{sh}">{st}</a>' for sh, st in SUBMENU.get(t, []))
-        for h, t, _ in NAV)
+    # Первый подпункт группы — сама страница раздела, дальше её подразделы
+    DRAWER_GROUPS = {"Расписание": ("schedule", "Всё расписание"), "О центре": ("about", "О нас")}
+    def drawer_link(h, t):
+        if t in DRAWER_GROUPS and SUBMENU.get(t):
+            key, first = DRAWER_GROUPS[t]
+            return drawer_group(key, t, [(h, first)] + SUBMENU[t])
+        return f'<a href="{h}">{t}</a>' + "".join(f'<a class="drawer__sub" href="{sh}">{st}</a>' for sh, st in SUBMENU.get(t, []))
+    dlinks = "".join(drawer_link(h, t) for h, t, _ in NAV)
     search_chips = "".join(f'<a class="search-chip" href="{FAC_LINKS.get(f, "#")}">{f}</a>' for f in SEARCH_DIRECTIONS)
     return f'''
   <div class="site-top" data-site-top>
@@ -503,7 +507,7 @@ def page(fname, title, desc, body, active="", lds=(), crumbs=None, extra_end="")
 </html>
 '''
     html = finalize(html)
-    with open(os.path.join(OUT, fname), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUT, fname), "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
     return fname
 
@@ -523,9 +527,12 @@ def finalize(html):
 # ======================= Блоки =======================
 def versioned(path):
     """Путь к CSS/JS с ?v=<хеш содержимого>. Хостинг отдаёт статику с кэшем на неделю;
-    с новой версией в адресе браузер после заливки сразу берёт свежий файл."""
+    с новой версией в адресе браузер после заливки сразу берёт свежий файл.
+    Переводы строк приводим к \n: иначе на разных машинах (Windows с core.autocrlf)
+    у одного и того же файла выходит разный хеш и все страницы «меняются» на пустом месте."""
     with open(os.path.join(OUT, path), "rb") as f:
-        return f"{path}?v={hashlib.md5(f.read()).hexdigest()[:8]}"
+        data = f.read().replace(b"\r\n", b"\n")
+    return f"{path}?v={hashlib.md5(data).hexdigest()[:8]}"
 
 def img(src, alt, w, h, cls="", lazy=True, extra=""):
     l = ' loading="lazy" decoding="async"' if lazy else ' fetchpriority="high"'
@@ -1318,66 +1325,168 @@ ACCRED_FAQ = [
  ("Что взять с собой на аккредитацию?",
   "Паспорт, СНИЛС и медицинскую форму: халат и шапочку. Маникюр должен быть коротким; если вы пользуетесь очками, возьмите их с собой."),
  ("Когда ближайшее заседание подкомиссии?",
-  "График заседаний обновляется по мере формирования групп. Ближайшие даты по вашей специальности и стоимость процедуры назовёт специалист центра — оставьте заявку."),
+  "Все даты на 2026 год — в графике проведения аккредитации на этой странице. Если нужной специальности или даты в нём нет, оставьте заявку: методист подскажет ближайшее заседание и что подготовить к записи."),
+ ("Обязательно ли проходить курс подготовки перед аккредитацией?",
+  "Нет, курс — по желанию. Он нужен тем, кто давно не работал на симуляционном оборудовании: на занятии вы проходите станции по тем же чек-листам, по которым потом оценивает подкомиссия."),
+ ("Сколько стоит подготовка к аккредитации?",
+  "Курс подготовки — 4 академических часа, 19 200 ₽, очно в группе; есть рассрочка от 1 600 ₽ в месяц. Оставьте заявку — методист предложит ближайшую дату занятия."),
  ("На основании какого документа проводится аккредитация?",
   "Процедура проводится по Положению об аккредитации специалистов, утверждённому приказом Министерства здравоохранения Российской Федерации № 709н."),
 ]
 
+# График аккредитации (сайт mzpokurs.com/akkreditatsiya): специальность, вид,
+# предварительный этап — только для аккредитуемых с иностранными дипломами СПО, затем 1 и 2 этапы.
+ACCRED_SCHEDULE = [
+    ("Сестринское дело в косметологии", "ПСА",    "17.08.2026",        "18.08.2026",        "20.08.2026"),
+    ("Сестринское дело",                "ПА/ПСА", "17.08.2026",        "18.08.2026",        "20.08.2026"),
+    ("Медицинский массаж",              "ПСА",    "02.09.2026, 15:00", "03.09.2026, 9:00",  "08.09.2026, 9:00"),
+    ("Сестринское дело в косметологии", "ПСА",    "30.09.2026, 15:00", "01.10.2026, 9:00",  "06.10.2026, 9:00"),
+    ("Сестринское дело",                "ПА/ПСА", "30.09.2026, 15:30", "01.10.2026, 12:00", "06.10.2026, 12:00"),
+    ("Медицинский массаж",              "ПСА",    "11.11.2026, 15:00", "12.11.2026, 9:00",  "17.11.2026, 9:00"),
+    ("Сестринское дело в косметологии", "ПСА",    "09.12.2026, 15:00", "10.12.2026, 9:00",  "15.12.2026, 9:00"),
+    ("Сестринское дело",                "ПА/ПСА", "09.12.2026, 15:30", "10.12.2026, 12:00", "15.12.2026, 12:00"),
+]
+
+# Курсы подготовки к аккредитации — названия, длительность и цена взяты со страницы
+# https://www.mzpo-s.ru/accreditation (4 ак. ч., очно в группе, 19 200 ₽).
+ACCRED_COURSES = [
+    ("Сестринское дело: подготовка мед. работников к первичной аккредитации",
+     "Очно в группе · станции и чек-листы подкомиссии · рассрочка от 1 600 ₽/мес",
+     "", "19 200 ₽", [("edu", "с мед. образованием"), ("hours", "4 ак. ч.")], "tile-med"),
+    ("Медицинский массаж: подготовка мед. работников к первичной специализированной аккредитации",
+     "Очно в группе · отработка приёмов на моделях · рассрочка от 1 600 ₽/мес",
+     "", "19 200 ₽", [("edu", "с мед. образованием"), ("hours", "4 ак. ч.")], "group-practice"),
+    ("Сестринское дело в косметологии: подготовка мед. работников к первичной специализированной аккредитации",
+     "Очно в группе · процедуры и санэпидрежим на станциях · рассрочка от 1 600 ₽/мес",
+     "", "19 200 ₽", [("edu", "с мед. образованием"), ("hours", "4 ак. ч.")], "tile-cosm"),
+    ("Сестринское дело: подготовка медицинских работников к первичной специализированной аккредитации",
+     "Очно в группе · манипуляции и неотложная помощь · рассрочка от 1 600 ₽/мес",
+     "", "19 200 ₽", [("edu", "с мед. образованием"), ("hours", "4 ак. ч.")], "expert"),
+]
+
+ACCRED_ADDR = "Учебный корпус: ул. Ленинская Слобода, 26, к. С, БЦ «Омега-2», этаж 2, офис 220"
+
+ACCRED_MEMO = ["Сбор на этапы — в кабинете 220, там же проходит инструктаж",
+               "Паспорт обязателен: в бизнес-центре пропускная система",
+               "Медицинский халат или форма, шапочка на второй этап",
+               "В зимний период — сменная обувь",
+               "СНИЛС, вода и очки, если вы ими пользуетесь",
+               "Маникюр короткий, неяркий"]
+
+ACCRED_DOCS = ["Федеральный закон от 21.11.2011 № 323-ФЗ «Об основах охраны здоровья граждан в Российской Федерации»",
+               "Положение об аккредитации специалистов — приказ Минздрава России № 709н от 28.10.2022",
+               "Номенклатура должностей медицинских работников — приказ № 205н от 02.05.2023",
+               "Квалификационные требования к специалистам со средним профессиональным медицинским образованием — приказ № 83н от 10.02.2016",
+               "Порядок выдачи свидетельств об аккредитации — постановление № 1082 от 22.11.2021"]
+
+
+def accred_iso(value):
+    # «02.09.2026, 15:00» -> «2026-09-02T15:00», «17.08.2026» -> «2026-08-17»
+    date, _, time = value.partition(",")
+    d, m, y = date.strip().split(".")
+    if time.strip():
+        h, mi = time.strip().split(":")
+        return "%s-%s-%sT%02d:%s" % (y, m, d, int(h), mi)
+    return "%s-%s-%s" % (y, m, d)
+
+
+def checklist(items, cls=""):
+    # Check Item из кита: круглый бейдж с галочкой + строка текста
+    return ('<ul class="checklist%s" role="list">' % ((" " + cls) if cls else "")
+            + "".join('<li><span class="icon-badge icon-badge--s">%s</span>%s</li>' % (icon("check"), i) for i in items)
+            + "</ul>")
+
+
 def accreditation():
     cr = [("Главная","index.html"),("Аккредитация","accreditation.html")]
 
-    specs = [("Медицинский массаж","Первичная специализированная аккредитация","tile-massage"),
-             ("Сестринское дело","Первичная и первичная специализированная аккредитация","tile-med"),
-             ("Сестринское дело в косметологии","Первичная специализированная аккредитация","tile-cosm")]
-    specs_html = "".join(f'<article class="course-card reveal"><div class="course-card__media media-zoom">{img(i,t,880,540)}</div><div class="course-card__body"><h3 class="course-card__title">{t}</h3><p class="course-card__meta">{d}</p><div class="course-card__actions"><a class="btn btn--primary btn--m" href="#lead">Записаться на аккредитацию</a></div></div></article>' for t,d,i in specs)
+    # Три вопроса, с которыми приходят на страницу: где проходить, как готовиться, где готовиться
+    pains = [("access","Где проходить аккредитацию","МЦПО — аккредитационный центр: подкомиссия заседает у нас, в корпусе у метро Автозаводская. Ниже — график на 2026 год по трём специальностям.","Смотреть график","#accred-schedule"),
+             ("methods","Как подготовиться","Разбираем все этапы: тестирование, станции с симуляционным оборудованием и ситуационные задачи — по тем же чек-листам, по которым оценивает подкомиссия.","Как проходит процедура","#accred-stages"),
+             ("teacher","Где подготовиться","Очный курс подготовки по вашей специальности: 4 академических часа на станциях центра — те же задания и чек-листы, что и на самой процедуре.","Выбрать курс подготовки","#accred-courses")]
+    pains_html = "".join(f'''<article class="reason reveal">
+          <span class="reason__icon"><img src="assets/icons/pict-{ic}.svg" alt="" width="48" height="48"></span>
+          <div class="reason__body"><h3 class="reason__title">{t}</h3><p class="reason__text">{d}</p>
+            <a class="more-link" href="{href}">{link}{icon("arrow-right")}</a></div>
+        </article>''' for ic, t, d, link, href in pains)
 
-    kinds = [("Первичная аккредитация","Проходят выпускники колледжа или вуза сразу после получения диплома — чтобы начать работать по специальности."),
-             ("Первичная специализированная","Для тех, кто закончил профессиональную переподготовку или ординатуру и получает допуск к новой специальности."),
-             ("Периодическая","Продление допуска к работе раз в пять лет: портфолио с отчётом о работе и зачётными единицами НМО.")]
-    kinds_html = "".join(f'<article class="feature reveal"><h3 class="feature__title">{t}</h3><p class="feature__text">{d}</p></article>' for t,d in kinds)
+    rows = "".join(f'<tr><td data-label="Специальность">{sp}</td><td data-label="Вид">{kind}</td>'
+                   f'<td data-label="Предварительный этап">{pre}</td><td data-label="1 этап">{e1}</td>'
+                   f'<td data-label="2 этап">{e2}</td>'
+                   f'<td><a class="btn btn--primary" href="#lead">Записаться</a></td></tr>'
+                   for sp, kind, pre, e1, e2 in ACCRED_SCHEDULE)
 
-    stages = [("num-1","Тестирование","Компьютерное тестирование по теоретической части — вопросы формируются из единой базы оценочных средств."),
-              ("num-2","Практические навыки","Отработка на симуляционном оборудовании: подкомиссия оценивает выполнение по чек-листу."),
-              ("num-3","Ситуационные задачи","Третий этап там, где он предусмотрен программой: разбор клинических случаев.")]
-    stages_html = "".join(f'<article class="whom-card reveal"><div class="whom-card__head">{img(i,"",120,128)}<h3>{t}</h3></div><p class="t-body-s t-muted">{d}</p></article>' for i,t,d in stages)
+    stages = [("methods","Тестирование","Компьютерный тест по теории специальности: вопросы формируются из единой базы оценочных средств."),
+              ("individual","Практические навыки","Задания на станциях с симуляционным оборудованием — подкомиссия оценивает выполнение по чек-листу."),
+              ("study-format","Ситуационные задачи","Разбор профессиональных ситуаций: этап для специальностей, где он предусмотрен.")]
+    stages_html = "".join('<article class="reason reveal">'
+                          f'<span class="reason__icon"><img src="assets/icons/pict-{ic}.svg" alt="" width="48" height="48"></span>'
+                          f'<div class="reason__body"><h3 class="reason__title">{t}</h3><p class="reason__text">{d}</p></div>'
+                          '</article>' for ic,t,d in stages)
+
+    courses_html = "".join(course_card(*c, btn="Записаться на курс") for c in ACCRED_COURSES)
 
     faq_html, faq_ld = faq_block("Вопросы об аккредитации", ACCRED_FAQ, "acfaq")
+
+    events_ld = [{"@context":"https://schema.org","@type":"EducationEvent",
+                  "name": ("Первичная специализированная аккредитация: " if kind == "ПСА"
+                           else "Первичная и первичная специализированная аккредитация: ") + sp.lower(),
+                  "startDate": accred_iso(e1), "endDate": accred_iso(e2),
+                  "eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode",
+                  "location":{"@type":"Place","name":"Аккредитационный центр МЦПО",
+                              "address":"Москва, ул. Ленинская Слобода, 26, к. С"},
+                  "organizer":{"@type":"Organization","name":"МЦПО","url":SITE}}
+                 for sp, kind, pre, e1, e2 in ACCRED_SCHEDULE]
 
     body = f'''
     <section class="container intro">
       {breadcrumbs(cr)}
       <h1>Аккредитация медицинских работников в Москве</h1>
-      <p class="intro__lead">МЦПО — аккредитационная площадка: мы не только готовим к процедуре, но и проводим её. Заседания подкомиссии проходят на нашем симуляционном оборудовании, по итогам специалист получает допуск к профессиональной деятельности.</p>
+      <p class="intro__lead">МЦПО — аккредитационный центр: принимаем первичную и первичную специализированную аккредитацию по медицинскому массажу, сестринскому делу и сестринскому делу в косметологии и готовим к этапам процедуры. Запись на ближайшие даты — за пару минут.</p>
+      <div class="hero__actions"><a class="btn btn--primary btn--l" href="#lead">Записаться на аккредитацию</a><a class="btn btn--outline btn--l" href="#accred-courses">К курсам подготовки</a></div>
+      <div class="intro__media reveal">{img("hero","Занятие в учебном корпусе МЦПО у метро Автозаводская",1404,1300,lazy=False)}</div>
     </section>
 
-    <section class="section container" aria-labelledby="specs-title">
-      <div class="section-head reveal" style="max-width:60ch"><h2 class="section-head__title" id="specs-title">Специальности, по которым мы проводим аккредитацию</h2><p class="section-head__lead">Это направления, где МЦПО выступает аккредитационной площадкой. По другим специальностям мы готовим к процедуре, но принимает её другая площадка.</p></div>
-      <div class="grid grid-3" data-stagger>{specs_html}</div>
+    <section class="section container" aria-labelledby="pains-title">
+      <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="pains-title">С чем к нам приходят</h2><p class="section-head__lead">Три вопроса, которые чаще всего задают перед аккредитацией — и короткие ответы</p></div>
+      <div class="grid grid-3" data-stagger>{pains_html}</div>
     </section>
 
-    <section class="section container" aria-labelledby="kinds-title">
-      <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="kinds-title">Какая аккредитация нужна именно вам</h2></div>
-      <div class="grid grid-3" data-stagger>{kinds_html}</div>
+    <section class="section container" aria-labelledby="accred-courses-title">
+      <div class="section-head reveal" style="max-width:66ch"><h2 class="section-head__title" id="accred-courses-title">Специальности, по которым МЦПО проводит аккредитацию</h2><p class="section-head__lead">Заседания подкомиссии проходят на нашей площадке у метро Автозаводская. По каждой специальности есть очный курс подготовки — те же станции и чек-листы, по которым потом оценивает подкомиссия.</p></div>
+      <div class="grid grid-4 courses--accred" id="accred-courses" data-scroll-bias="0.12" data-stagger>{courses_html}</div>
+      <div class="row" style="justify-content:center"><a class="btn btn--primary btn--l" href="#lead">Записаться на аккредитацию</a></div>
     </section>
 
-    <section class="section container" aria-labelledby="stages-title">
-      <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="stages-title">Как проходит процедура</h2><p class="section-head__lead">Этапы идут последовательно, по Положению об аккредитации специалистов (приказ Минздрава России № 709н)</p></div>
+    <section class="section container" aria-labelledby="accred-schedule">
+      <div class="sched-course reveal">
+        <div class="sched-course__head"><h2 id="accred-schedule">График проведения аккредитации на 2026 год</h2></div>
+        <table class="schedule-table schedule-table--accred">
+          <thead><tr><th scope="col">Специальность</th><th scope="col">Вид</th><th scope="col">Предварительный этап*</th><th scope="col">1 этап</th><th scope="col">2 этап</th><th><span class="visually-hidden">Запись</span></th></tr></thead>
+          <tbody>{rows}</tbody>
+        </table>
+        <p class="t-body-s t-muted">* Предварительный этап — только для аккредитуемых с иностранными дипломами СПО. ПА — первичная аккредитация, ПСА — первичная специализированная аккредитация.</p>
+      </div>
+      <div class="cta reveal"><p class="cta__text">Не нашли свою специальность или дату? Подберём ближайшее заседание и подскажем, что подготовить</p><a class="btn btn--primary" href="#lead">Оставить заявку</a></div>
+    </section>
+
+    <section class="section container" aria-labelledby="accred-stages">
+      <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="accred-stages">Как проходит процедура</h2><p class="section-head__lead">Этапы идут последовательно, по Положению об аккредитации специалистов (приказ Минздрава России № 709н)</p></div>
       <div class="grid grid-3" data-stagger>{stages_html}</div>
     </section>
 
-    <section class="container" aria-labelledby="prep-title">
-      <div class="docs reveal">
-        <div class="stack gap-lg"><h2 id="prep-title">Что взять с собой</h2><ul class="bullets"><li>Паспорт</li><li>СНИЛС</li><li>Медицинский халат и шапочку</li><li>Короткий маникюр</li><li>Очки, если вы ими пользуетесь</li></ul><p class="t-secondary">Приходите заранее: перед началом подкомиссия сверяет документы участников.</p></div>
-        <div class="docs__imgs docs__imgs--single">{img("group-practice","Отработка практических навыков на симуляционном оборудовании",900,640)}</div>
-      </div>
-    </section>
-
-    <section class="section container" aria-labelledby="train-title">
-      <div class="section-head reveal" style="max-width:56ch"><h2 class="section-head__title" id="train-title">Подготовка к аккредитации</h2><p class="section-head__lead">Если до процедуры хочется потренироваться — записывайтесь на отработку практических навыков. Занятие идёт на том же оборудовании и по тем же чек-листам, по которым оценивает подкомиссия.</p></div>
-      <div class="grid grid-3" data-stagger>
-        <article class="feature reveal"><h3 class="feature__title">Те же чек-листы</h3><p class="feature__text">Разбираем критерии, по которым выставляется оценка, и типичные ошибки на практическом этапе.</p></article>
-        <article class="feature reveal"><h3 class="feature__title">То же оборудование</h3><p class="feature__text">Симуляционное оборудование площадки — к процедуре вы приходите в знакомую обстановку.</p></article>
-        <article class="feature reveal"><h3 class="feature__title">Портфолио и баллы НМО</h3><p class="feature__text">Для периодической аккредитации подскажем, как собрать портфолио и чем добрать недостающие зачётные единицы.</p></article>
+    <section class="section container" aria-labelledby="memo-title">
+      <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="memo-title">Что взять с собой и на чём всё основано</h2></div>
+      <div class="grid grid-2" data-stagger>
+        <article class="feature reveal">
+          <h3 class="feature__title">Памятка аккредитуемому</h3>
+          <p class="feature__text">{ACCRED_ADDR}</p>
+          {checklist(ACCRED_MEMO)}
+        </article>
+        <article class="feature reveal">
+          <h3 class="feature__title">Нормативные документы</h3>
+          {checklist(ACCRED_DOCS)}
+        </article>
       </div>
     </section>
 
@@ -1385,9 +1494,9 @@ def accreditation():
 {faq_html}
 {map_block()}
 '''
-    return page("accreditation.html","Аккредитация медработников в Москве — аккредитационная площадка МЦПО",
-                "Аккредитационная площадка МЦПО: первичная и первичная специализированная аккредитация по медицинскому массажу и сестринскому делу. Этапы, что взять с собой, подготовка.",
-                body, "Аккредитация", [faq_ld], cr)
+    return page("accreditation.html","Аккредитация медработников в Москве — график, подготовка, курсы | МЦПО",
+                "Аккредитационный центр МЦПО: первичная и первичная специализированная аккредитация по медицинскому массажу, сестринскому делу и сестринскому делу в косметологии. График на 2026 год, этапы процедуры, курсы подготовки и отработка практических навыков.",
+                body, "Аккредитация", [faq_ld] + events_ld, cr)
 
 
 # ======================= Страница преподавателя =======================
@@ -1945,7 +2054,7 @@ def search_index():
           "   Курсы для живого поиска в шапке, окно #modal-search. main.js подгружает файл при первом открытии окна.\n"
           "   t — название, m — подпись, o — старая цена, p — цена, b — бейджи, i — картинка, h — страница курса. */\n"
           "window.MZPO_COURSES = " + json.dumps(items, ensure_ascii=False, separators=(",", ":")).replace("},{", "},\n{") + ";\n")
-    with open(os.path.join(OUT, "assets", "js", "search-index.js"), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUT, "assets", "js", "search-index.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write(js)
     return f"assets/js/search-index.js ({len(items)} курсов)"
 

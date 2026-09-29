@@ -5,6 +5,10 @@
 /* ---------- Page intro (H1 + lead) ---------- */
 .intro { display: flex; flex-direction: column; gap: var(--space-xl); padding-top: 4px; }
 .intro__lead { max-width: 1000px; font-size: var(--font-body-l); line-height: var(--line-body-l); color: var(--color-text-secondary); }
+/* Широкая картинка под заголовком страницы: высота задаётся пропорцией,
+   поэтому блок не поедет, если текст заголовка станет длиннее или короче. */
+.intro__media { aspect-ratio: 1632 / 460; border-radius: var(--radius-lg); overflow: hidden; }
+.intro__media img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ---------- Home hero ---------- */
 .hero { display: grid; grid-template-columns: 702fr 662fr; gap: 16px; min-height: clamp(520px, 34vw, 650px); }
@@ -31,6 +35,7 @@
 /* Телефон: заголовок на пиксель мельче и на всю ширину слайдера (поля 16 px, как у страницы),
    ползунок слева, «Подробнее» справа от него в одну строку */
 @media (max-width: 767px) {
+  .intro__media { aspect-ratio: 4 / 3; }
   .hero-slider__text h1, .hero-slider__text .t-h1 { font-size: calc(var(--font-h1) - 1px); line-height: calc(var(--line-h1) - 1px); }
   .hero-slider__bar { flex-wrap: nowrap; }
   .hero-progress { order: -1; }

@@ -72,7 +72,10 @@
     var top = topHeight();
     var r = el.getBoundingClientRect();
     var free = window.innerHeight - top;
-    var y = window.scrollY + r.top - top - Math.max(16, (free - r.height) / 2);
+    // data-scroll-bias — доля свободной высоты, на которую цель поднимается выше центра.
+    // Нужна длинным блокам (карточки курсов): по центру у них видна середина, а не начало.
+    var bias = parseFloat(el.getAttribute('data-scroll-bias')) || 0;
+    var y = window.scrollY + r.top - top - Math.max(16, (free - r.height) / 2 - free * bias);
     window.scrollTo({ top: Math.max(0, y), behavior: reduceMotion ? 'auto' : 'smooth' });
   }
   document.addEventListener('click', function (e) {

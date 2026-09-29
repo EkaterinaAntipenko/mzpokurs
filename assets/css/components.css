@@ -108,9 +108,9 @@
 .tab--on-white { background: var(--color-bg-page); }
 
 /* ---------- Field (input) ---------- */
-.field { position: relative; display: flex; flex-direction: column; gap: 6px; }
+.field { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field__control {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; min-width: 0;
   min-height: var(--layout-input-h); padding: 0 20px;
   border-radius: var(--radius-full); background: var(--color-bg-page);
   border: 1px solid var(--color-border-default);
@@ -361,6 +361,12 @@
 .course-card__body { flex: 1; display: flex; flex-direction: column; gap: 16px; padding: var(--space-lg); }
 .course-card__title { font-size: var(--font-h4); line-height: var(--line-h4); font-weight: var(--fw-bold); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .course-card__title a::after { content: ""; position: absolute; inset: 0; z-index: 1; } /* вся карточка кликабельна */
+/* Названия курсов подготовки к аккредитации длиннее обычных: на узком десктопе
+   они занимают до шести строк — обрезать их нельзя, теряется вид аккредитации. */
+.courses--accred .course-card__title { -webkit-line-clamp: 6; }
+/* На телефоне карточки курсов идут по одной: в две колонки длинные названия
+   обрезаются, а кнопка «Записаться на курс» переносится в две строки. */
+@media (max-width: 767px) { .courses--accred { grid-template-columns: 1fr; gap: var(--space-lg); } }
 .course-card__meta { font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .course-card__price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-top: auto; }
 .course-card__old { font-size: var(--font-caption); color: var(--color-text-muted); text-decoration: line-through; }
@@ -556,6 +562,7 @@
   .schedule-table td:last-child .btn { width: 100%; }
   .schedule-table .is-soon { background: linear-gradient(135deg, var(--color-bg-inverse), var(--p-teal-900)); color: var(--color-text-inverse); }
   .schedule-table .is-soon td[data-label]::before { color: rgba(255,255,255,.6); }
+  .schedule-table--accred tr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ---------- Event card ---------- */
@@ -753,9 +760,11 @@
 }
 
 /* ---------- Modal ---------- */
-.modal { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; visibility: hidden; }
+/* grid-template-columns здесь обязателен: без него колонка растёт до min-content
+   формы (поле телефона ~310 px) и на экране 360 px окно вылезает за правый край. */
+.modal { position: fixed; inset: 0; z-index: 200; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 16px; visibility: hidden; }
 .modal__overlay { position: absolute; inset: 0; background: rgba(28,38,59,.55); opacity: 0; transition: opacity var(--dur-base); }
-.modal__dialog { position: relative; width: min(480px, 100%); padding: 40px 32px 32px; border-radius: var(--radius-lg); background: var(--color-bg-page); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; transform: translateY(16px) scale(.97); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
+.modal__dialog { position: relative; width: min(480px, 100%); max-width: 100%; padding: 40px 32px 32px; border-radius: var(--radius-lg); background: var(--color-bg-page); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; transform: translateY(16px) scale(.97); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
 .modal__close { position: absolute; right: 16px; top: 16px; }
 .modal__icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-accent-soft); color: var(--color-text-accent); }
 .modal__icon .icon { width: 36px; height: 36px; stroke-width: 2.4; stroke-dasharray: 30; stroke-dashoffset: 30; }
@@ -904,6 +913,10 @@ body.is-locked { overflow: hidden; }
   .schedule-table td { font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); }
   .schedule-table td:last-child { padding: 0; }
   .schedule-table td:last-child .btn { width: 100%; min-height: 57px; }
+  /* График аккредитации: пять колонок данных + кнопка (кит: Accreditation Row).
+     Специальность длиннее остальных ячеек, поэтому колонка шире и текст слева. */
+  .schedule-table--accred tr { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) repeat(3, minmax(0, 2fr)) minmax(0, 2.2fr); }
+  .schedule-table--accred th:first-child, .schedule-table--accred td:first-child { padding-left: 20px; text-align: left !important; }
   /* Подсветка ближайшей даты — отдельный слой под ячейками 1–4, скруглённый со
      всех сторон. На самой строке её держать нельзя: она тянулась бы и под кнопку,
      а обрезать её белой ячейкой — значит получить прямой срез справа. */
