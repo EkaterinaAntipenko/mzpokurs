@@ -33,6 +33,7 @@
   --color-bg-page: var(--p-neutral-0);
   --color-bg-surface: var(--p-neutral-50);
   --color-bg-surface-alt: var(--p-neutral-100);
+  --color-bg-neutral-hover: var(--p-neutral-200);   /* ховер светлых круглых кнопок: чуть темнее, не бирюзовый */
   --color-bg-inverse: var(--p-navy-900);
   --color-bg-inverse-soft: var(--p-navy-700);
   --color-bg-accent: var(--p-teal-400);

@@ -49,11 +49,16 @@
 @media (max-width: 767px) { .why { padding: 28px 20px; align-items: stretch; text-align: left; gap: 24px; } .why__stats { grid-template-columns: 1fr 1fr; gap: 20px 12px; text-align: center; } }
 
 /* ---------- Bento ---------- */
-/* Раскладка 1:1 с макетом: «диплом» и «преподаватели» — высокие карточки по краям,
-   между ними две обычные, снизу широкая «очно/дистанционно» и «индивидуальный подход». */
+/* По макету 973-8410 (заказчик, 30.09): «диплом» и «преподаватели» — высокие карточки по краям, между ними
+   «скидки» и «материалы», снизу широкая «очно/дистанционно» и «индивидуальный подход»; три ряда одной высоты,
+   текст карточек — Body L. Картинки как в макете: у скидок — значок процента, у «очно/дистанционно» — массаж
+   в телефоне (файлы adv-percent / adv-online раньше были перепутаны местами). */
+/* Ряды: «Скидки» выше «Материалов» (заказчик, 30.09) — 1,25 : 0,75; нижний ряд — 1. «Диплом» и «Преподаватели»
+   занимают два верхних ряда, их высота не меняется. */
 .bento {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: 1.25fr 0.75fr 1fr;
   grid-template-areas:
     "diploma loyalty  teachers"
     "diploma access   teachers"
@@ -66,10 +71,22 @@
 .bento__access   { grid-area: access; }
 .bento__format   { grid-area: format; }
 .bento__approach { grid-area: approach; }
+.bento .feature__text { font-size: var(--font-body-l); line-height: var(--line-body-l); }
+/* «Удостоверение в ФИС ФРДО»: фото горизонтальное, как в макете (373×272), но кадр от головы — выпускница видна
+   целиком с удостоверением. На телефоне — чуть выше квадрата, 9:10 (заказчик, 30.09). */
+.feature__media--diploma { aspect-ratio: 373 / 272; }
+.feature__media--diploma img { object-position: 50% 25%; }   /* кадр — заказчик, 30.09 */
+/* «Скидки»: значок процента крупно, справа внизу, выходит за край карточки — как в макете */
+@media (min-width: 1200px) {
+  .bento__loyalty { padding-bottom: var(--space-card); }
+  .bento__loyalty .feature__deco { left: 32%; top: 31%; right: auto; bottom: auto; width: 77%; }
+  .bento__loyalty > :not(.feature__deco) { position: relative; z-index: 1; }
+}
 
 @media (max-width: 1199px) {
   .bento {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
     grid-template-areas:
       "diploma  teachers"
       "loyalty  access"
@@ -82,11 +99,10 @@
     grid-template-columns: 1fr;
     grid-template-areas: "diploma" "loyalty" "teachers" "access" "format" "approach";
   }
+  .feature__media--diploma { aspect-ratio: 9 / 10; }
   /* Карточка у середины экрана в полный размер, соседние уменьшены и приглушены (main.js,
      [data-focus-list]). Страница листается как обычно — прилипания к карточкам нет, его
      убрали по просьбе заказчика 29.09. Появление при прокрутке здесь не нужно. */
-  /* первая карточка («Удостоверение в ФИС ФРДО») — вертикальное фото 4:5 (<picture> в build.py) */
-  .feature__media--tall-m { aspect-ratio: 4 / 5; }
   .bento.is-focus > .feature { transform-origin: 50% 50%; transition: transform .2s linear, opacity .2s linear; transition-delay: 0s; will-change: transform, opacity; }
 }
 
@@ -144,9 +160,38 @@
 .catalog__filters-overlay { display: none; }
 .catalog__filters-panel { display: flex; flex-direction: column; gap: 16px; }
 @media (min-width: 1200px) {
-  .catalog__filters { display: none; }
+  /* Открытая колонка стоит на месте при прокрутке: липнет под шапкой, а если выше свободной части
+     экрана — листается сама (заказчик, 30.09) */
+  .catalog__filters { display: none; position: sticky; top: calc(var(--site-top-h, 180px) + 16px); max-height: calc(100vh - var(--site-top-h, 180px) - 32px); overflow-y: auto; scrollbar-width: thin; }
   .catalog.is-filters-open { grid-template-columns: 300px minmax(0, 1fr); }
   .catalog.is-filters-open .catalog__filters { display: flex; }
+  /* Колонка выезжает слева, а карточки курсов переезжают на новые места: 4 в ряд → 3 (с открытой
+     колонкой) и обратно (заказчик, 30.09). Это View Transitions: main.js на время перехода ставит
+     html.vt-catalog и .is-filters-anim, а карточкам, полосе над ними и «ничего не нашли» — свои имена
+     (catalog-0, catalog-1…), браузер ведёт каждую из старого места в новое. Колонка едет внутри своего
+     места (overflow: clip у группы) — выдвигается из-за края, а не из поля страницы. Шапка — отдельной
+     группой поверх: карточки, уехавшие под неё прокруткой, не вылезают над ней. Страница вокруг стоит:
+     затемнение перехода между страницами (base.css) здесь выключено — иначе вся страница мигала.
+     Без поддержки API и при prefers-reduced-motion колонка появляется сразу. */
+  .catalog.is-filters-anim .catalog__filters { view-transition-name: catalog-filters; }
+  html.vt-catalog .site-top { view-transition-name: site-top; }
+  html.vt-catalog::view-transition-group(*) { animation-duration: .45s; animation-timing-function: var(--ease-out); }
+  /* Без наложения старого снимка на новый: карточка сразу в новом виде и доезжает до своего размера —
+     при обычном перекрёстном затухании текст карточек и полосы на миг двоился. */
+  html.vt-catalog::view-transition-old(*) { display: none; }
+  html.vt-catalog::view-transition-new(*) { animation: none; }
+  /* Полоса над курсами и «ничего не нашли» (имена ставит main.js): фон тянется по месту перехода,
+     а надписи и кнопки — в натуральную величину и только едут. Одним снимком полосу растягивало
+     вместе с текстом, и название направления прыгало вниз-вверх (заказчик, 30.09) */
+  html.vt-catalog::view-transition-new(catalog-bar), html.vt-catalog::view-transition-new(catalog-empty) { height: 100%; }
+  html.vt-catalog::view-transition-new(catalog-bar-title), html.vt-catalog::view-transition-new(catalog-bar-toggle),
+  html.vt-catalog::view-transition-new(catalog-bar-found), html.vt-catalog::view-transition-new(catalog-empty-0),
+  html.vt-catalog::view-transition-new(catalog-empty-1), html.vt-catalog::view-transition-new(catalog-empty-2) { width: auto; height: auto; }
+  ::view-transition-group(catalog-filters) { overflow: clip; }
+  html.vt-catalog::view-transition-new(catalog-filters):only-child { animation: filters-in .45s var(--ease-out) both; }
+  html.vt-catalog::view-transition-old(catalog-filters):only-child { display: block; animation: filters-out .45s var(--ease-out) both; }
+  /* кнопка «Показать курсы» в колонке не нужна: фильтры применяются сразу (заказчик, 30.09) */
+  .filters-foot { display: none; }
   .catalog__filter-toggle { display: inline-flex; }
   .catalog__filter-toggle[aria-expanded="true"] { --btn-bg: var(--color-bg-inverse); --btn-fg: var(--color-text-inverse); }
   /* открытая колонка сужает полосу: переносится название, а кнопка со счётчиком остаются в строке и на месте */
@@ -177,6 +222,8 @@
   .catalog__filters-panel { width: 100%; height: 100%; max-height: none; border-radius: 0; padding: 16px 16px 0; }
   .catalog__tabs, .catalog__filter-btn { display: none; }
 }
+@keyframes filters-in { from { transform: translateX(-100%); } }
+@keyframes filters-out { to { transform: translateX(-100%); } }
 .catalog__mobile-bar { display: none; }
 @media (max-width: 767px) { .catalog__mobile-bar { display: flex; align-items: center; gap: 8px; } }
 .dir-select { position: relative; flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cap icon" "val icon"; align-items: center; column-gap: 8px; min-height: 56px; padding: 7px 20px; border-radius: var(--radius-full); background: var(--color-bg-surface); }
@@ -191,7 +238,10 @@
 /* Колонки каталога. Уже ~305 px кнопка со ссылкой в подвале карточки перестают помещаться
    в строку, поэтому без фильтров 4 в ряд (как «Популярные курсы» на главной) только с 1600 px.
    Открытая колонка фильтров забирает 320 px — карточек в ряду на одну меньше, до 1500 px две. */
-.catalog__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* position: relative — уходящие при отборе карточки гаснут поверх сетки на прежнем месте (main.js, FLIP) */
+.catalog__grid { position: relative; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Ничего не нашлось после фильтров (catalog_empty в build.py) */
+.catalog__empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 32px; border-radius: 16px; background: var(--color-bg-surface); }
 @media (max-width: 1599px) { .catalog__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1199px) { .catalog__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 767px)  { .catalog__grid { grid-template-columns: minmax(0, 1fr); } }
@@ -210,21 +260,57 @@
 /* ---------- Perspectives ---------- */
 .persp { display: grid; grid-template-columns: 290px 1fr 1fr; gap: 20px; }
 .persp__card { display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
-.persp__card img { width: 100%; height: clamp(150px, 11.25vw, 216px); margin-top: 10px; border-radius: 16px; object-fit: cover; object-position: 50% var(--pos-y, 50%); }
+/* фото чуть выше, чем 29.09 (216/150): 264 px на 1920, 170 на телефоне (заказчик, 30.09) — блоки с процентами тянутся по ряду */
+.persp__card img { width: 100%; height: clamp(170px, 13.75vw, 264px); margin-top: 10px; border-radius: 16px; object-fit: cover; object-position: 50% var(--pos-y, 50%); }
 @media (max-width: 1199px) { .persp { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 767px) { .persp { grid-template-columns: 1fr 1fr; gap: 12px; } .persp__card { padding: 16px; } .persp__card--photo { grid-column: 1 / -1; } .persp__card:not(.persp__card--photo) { order: -1; } .persp .t-display { font-size: var(--font-h1); line-height: var(--line-h1); } }
 
-/* ---------- Expert ---------- */
-.expert { display: grid; grid-template-columns: 409px 1fr; gap: 16px; }
-.expert__photo { border-radius: var(--radius-md); overflow: hidden; }
-.expert__photo img { width: 100%; height: 100%; object-fit: cover; }
-.expert__card { display: flex; flex-direction: column; gap: 20px; padding: 40px; border-radius: var(--radius-md); background: var(--color-bg-surface); }
-.expert__tags { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: var(--font-body-s); color: var(--color-text-muted); }
-.expert__quote { font-size: var(--font-body-l); line-height: var(--line-body-l); }
-/* Фото было жёстко 409 px до самого мобильного: на 768 px под текст оставалось
-   148 px. Переводим на долю ширины — колонка текста больше не схлопывается. */
-@media (max-width: 1199px) { .expert { grid-template-columns: minmax(0, 34%) 1fr; } .expert__card { padding: 28px; } }
-@media (max-width: 767px) { .expert { grid-template-columns: 1fr; } .expert__photo { aspect-ratio: 343 / 300; } .expert__card { padding: 20px; } }
+/* ---------- Expert: цитаты преподавателей — слайдер (заказчик, 30.09, макет 973-9580) ----------
+   Фото слева (прогресс внизу — как у слайдера главной), справа серая карточка: пометки, имя, цитата
+   в <blockquote> и круглая бирюзовая стрелка «дальше». Слайды лежат в одной ячейке грида: высота
+   карточки — по самой длинной цитате, при смене ничего не прыгает. Листает main.js ([data-quote-slider]). */
+.expert { display: grid; grid-template-columns: 409px minmax(0, 1fr); gap: var(--space-xl); }
+.expert__photo { position: relative; overflow: hidden; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.expert__pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; opacity: 0; transition: opacity .7s var(--ease-out); }
+.expert__pic.is-active { opacity: 1; }
+.expert__progress { position: absolute; left: 27px; bottom: 40px; z-index: 1; }
+.expert.is-paused .hero-progress__seg.is-active i { animation-play-state: paused; }
+.expert__card { display: flex; align-items: center; gap: var(--space-2xl); min-height: 455px; padding: 27px 37px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.expert__slides { flex: 1; min-width: 0; display: grid; }
+.expert__slide { grid-area: 1 / 1; align-self: center; display: flex; flex-direction: column; gap: 35px; margin: 0; opacity: 0; transform: translateY(12px); transition: opacity .5s var(--ease-out), transform .5s var(--ease-out); pointer-events: none; }
+.expert__slide.is-active { opacity: 1; transform: none; transition-delay: .15s; pointer-events: auto; }
+.expert__head { display: flex; flex-direction: column; gap: 10px; }
+.expert__tags { display: flex; flex-wrap: wrap; gap: 8px 32px; font-size: var(--font-body-s); line-height: var(--line-body-s); color: var(--color-text-muted); }
+/* имя — H1, как в макете 973-9580 и в ките (раньше на сайте было h2 и расходилось с китом); на телефоне H2 */
+.expert__name { font-size: var(--font-h1); line-height: var(--line-h1); font-weight: var(--fw-bold); }
+.expert__quote { display: flex; flex-direction: column; gap: 10px; max-width: 720px; margin: 0; font-size: var(--font-body-l); line-height: var(--line-body-l); }
+/* Как в макете 973-9580: у цитаты своя область 254 px — открывающие кавычки вверху, закрывающие внизу, текст
+   посередине. Без неё короткая цитата жалась к имени, и всё содержимое сидело кучкой (заказчик, 30.09). */
+@media (min-width: 1200px) { .expert__quote { min-height: 254px; justify-content: space-between; } }
+.expert__mark { width: 28px; height: 28px; fill: currentColor; }
+.expert__mark--end { align-self: flex-end; transform: rotate(180deg); }
+.expert__next { width: 68px; height: 68px; background: var(--color-bg-accent); }
+.expert__next .icon { width: 28px; height: 28px; stroke-width: 2.4; }
+@media (hover: hover) { .expert__next:hover { background: var(--color-bg-accent-hover); transform: translateX(3px); } }
+@media (max-width: 1199px) {
+  .expert { grid-template-columns: minmax(0, 34%) minmax(0, 1fr); }
+  .expert__card { min-height: 400px; padding: 28px; }
+  .expert__slide { gap: 24px; }
+  .expert__next { width: 56px; height: 56px; }
+}
+/* Телефон: фото сверху (прогресс на нём), под ним карточка; стрелка — под цитатой справа */
+@media (max-width: 767px) {
+  .expert { grid-template-columns: 1fr; gap: 12px; }
+  .expert__photo { aspect-ratio: 343 / 300; }
+  .expert__progress { left: 16px; bottom: 16px; }
+  .expert__card { flex-direction: column; align-items: stretch; gap: 16px; min-height: 0; padding: 20px; }
+  .expert__slide { gap: 20px; }
+  .expert__tags { gap: 4px 16px; font-size: var(--font-caption); line-height: var(--line-caption); }
+  .expert__name { font-size: var(--font-h2); line-height: var(--line-h2); }
+  .expert__mark { width: 22px; height: 22px; }
+  .expert__next { align-self: flex-end; width: 48px; height: 48px; }
+  .expert__next .icon { width: 22px; height: 22px; }
+}
 
 /* ---------- Course hero ---------- */
 /* minmax(0, 1fr), а не 1fr: иначе колонка растёт до min-content формы (поле телефона с маской)
@@ -293,11 +379,12 @@
 .tariff-price--inverse s { color: rgba(255, 255, 255, .5); }
 .tariff-price--inverse span { color: rgba(255, 255, 255, .7); }
 .tariff-price--inverse b { color: var(--color-text-inverse); }
-.tariff-card__list { padding-top: var(--space-md); border-top: 1px solid var(--color-border-default); }
+/* margin-bottom — отступ над «Записаться» не меньше 2 × space-md (заказчик, 30.09: было впритык, 16 px) */
+.tariff-card__list { padding-top: var(--space-md); margin-bottom: var(--space-md); border-top: 1px solid var(--color-border-default); }
 /* двойной класс: общее правило .checklist ниже по файлу и иначе перебивает модификаторы */
 .checklist.checklist--s li { font-size: var(--font-body-s); line-height: var(--line-body-s); }
-/* кнопка внизу карточки: карточки в ряду одной высоты, кнопки на одной линии */
-.tariff-card .btn { align-self: flex-start; margin-top: auto; }
+/* кнопка внизу карточки и на всю её ширину (заказчик, 30.09): карточки в ряду одной высоты, кнопки на одной линии */
+.tariff-card .btn { align-self: stretch; margin-top: auto; }
 .tariff-wide { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3xl); padding: var(--space-xl); border-radius: var(--radius-md); background: var(--color-bg-inverse-soft); }
 .tariff-wide__info { display: flex; flex-direction: column; gap: var(--space-sm); }
 .tariff-wide h3 { color: var(--color-bg-accent); }
@@ -337,7 +424,10 @@
 .filter-bar__actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .filter-bar__actions button[type=reset] { font-size: var(--font-caption); text-decoration: underline; opacity: .7; }
 .sched-layout { display: grid; grid-template-columns: 400px 1fr; gap: 30px; align-items: start; }
-.course-list { position: sticky; top: 180px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 8px; }
+/* Список курсов прижат к верху — сразу под закреплённой шапкой, а не на 180 px: над ним висела пустая полоса,
+   и короткий список стоял посередине экрана (заказчик, 30.09). Закреплённая строка меню на 12 px выше --site-top-h
+   (76 против 64), отсюда +28 = 16 px зазора под ней. */
+.course-list { position: sticky; top: calc(var(--site-top-h, 180px) + 28px); display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - var(--site-top-h, 180px) - 44px); overflow-y: auto; padding-right: 8px; }
 .course-list a { padding: 18px 24px; border-radius: 16px; background: var(--color-bg-surface); transition: background-color var(--dur-fast), color var(--dur-fast); }
 @media (hover: hover) { .course-list a:hover { background: var(--color-bg-surface-alt); } }
 .course-list a[aria-current] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }

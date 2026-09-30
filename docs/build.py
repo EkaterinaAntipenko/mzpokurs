@@ -53,6 +53,9 @@ def icon(name, cls="icon"):
 
 QUOTE = '<svg class="review__quote" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h7v7H7l-1.5 5H3.5L5 13H3z M14 6h7v7h-3l-1.5 5h-2L16 13h-2z"/></svg>'
 PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="#1C263B"/></svg>'
+# Кавычки в цитатах преподавателей (quote_slider) — тот же значок, что в отзывах; закрывающие перевёрнуты в CSS
+QUOTE_MARK = QUOTE.replace('class="review__quote"', 'class="expert__mark"')
+QUOTE_MARK_END = QUOTE.replace('class="review__quote"', 'class="expert__mark expert__mark--end"')
 
 LOGO_SVG = open(os.path.join(OUT, "assets", "icons", "logo.svg"), encoding="utf-8").read().replace('<svg ', '<svg class="logo__mark" ', 1).replace(' role="img" aria-label="МЦПО"', ' aria-hidden="true"')
 
@@ -81,6 +84,11 @@ FAC_LINKS = {"Массаж и реабилитация": "faculty-massage.html",
              "Медицинская подготовка": "doctors.html",
              "Курсы НМО для врачей": "doctors.html",
              "Аккредитация медработников": "accreditation.html"}
+
+def fac_href(name):
+    """Ссылка на факультет или направление. Своей страницы нет — пока ведёт на факультет массажа,
+    единственный готовый каталог (заказчик, 30.09; раньше такие ссылки были неактивными)."""
+    return FAC_LINKS.get(name, "faculty-massage.html")
 
 # ---------- Каталог для выпадающего меню ----------
 # (id, факультет, картинка, [(id, направление, картинка, [(курс, картинка)])])
@@ -228,7 +236,7 @@ def mega_menu():
     Все списки отрисованы сразу, JS только переключает активный."""
     fac_items, dir_cols, course_cols = [], [], []
     for fi, (fid, fname, fimg, dirs) in enumerate(CATALOG):
-        href = FAC_LINKS.get(fname, "#")
+        href = fac_href(fname)
         act = " is-active" if fi == 0 else ""
         fac_items.append(
             f'<li><a class="mega__item{act}" href="{href}" data-fac="{fid}" data-img="{fimg}">'
@@ -280,7 +288,7 @@ def header(active=""):
         return (f'<div class="drawer__group"><button class="drawer__toggle" type="button" aria-expanded="false" aria-controls="dsub-{key}">'
                 f'<span>{title}</span>{icon("chevron-down", "icon icon--sm")}</button>'
                 f'<div class="drawer__subs" id="dsub-{key}"><div class="drawer__subs-inner">{subs}</div></div></div>')
-    catalog_group = drawer_group("catalog", "Каталог курсов", [(FAC_LINKS.get(fname, "#"), fname) for _fid, fname, _fimg, _dirs in CATALOG])
+    catalog_group = drawer_group("catalog", "Каталог курсов", [(fac_href(fname), fname) for _fid, fname, _fimg, _dirs in CATALOG])
     # Первый подпункт группы — сама страница раздела, дальше её подразделы
     DRAWER_GROUPS = {"Расписание": ("schedule", "Всё расписание"), "О центре": ("about", "О нас")}
     def drawer_link(h, t):
@@ -289,7 +297,7 @@ def header(active=""):
             return drawer_group(key, t, [(h, first)] + SUBMENU[t])
         return f'<a href="{h}">{t}</a>' + "".join(f'<a class="drawer__sub" href="{sh}">{st}</a>' for sh, st in SUBMENU.get(t, []))
     dlinks = "".join(drawer_link(h, t) for h, t, _ in NAV)
-    search_chips = "".join(f'<a class="search-chip" href="{FAC_LINKS.get(f, "#")}">{f}</a>' for f in SEARCH_DIRECTIONS)
+    search_chips = "".join(f'<a class="search-chip" href="{fac_href(f)}">{f}</a>' for f in SEARCH_DIRECTIONS)
     return f'''
   <div class="site-top" data-site-top>
   <div class="promo" data-promo="autumn-2026">
@@ -409,15 +417,15 @@ def footer():
           {field("text","name","Имя*")}
           <div class="row">{field("tel","phone")}{field("text","spec","Ваша специальность*")}</div>
           {consent(True)}
-          <div><button class="btn btn--primary" type="submit">Подобрать курс</button></div>
+          <div class="footer__submit"><button class="btn btn--primary" type="submit">Подобрать курс</button></div>
         </form>
       </div>
       <div class="footer__divider"></div>
       <div class="footer__cols">
-        <div class="footer__col"><h3>Направления</h3>{"".join(f'<a href="{FAC_LINKS.get(f, "#")}">{f}</a>' for f in fac)}</div>
+        <div class="footer__col"><h3>Направления</h3>{"".join(f'<a href="{fac_href(f)}">{f}</a>' for f in fac)}</div>
         <div class="footer__col footer__col--menu"><h3>Центр</h3>{"".join(f'<a href="{h}">{t}</a>' for h,t in menu)}</div>
-        <div class="footer__col"><h3>Новости и акции</h3><p class="footer__muted">Даты стартов, скидки и бесплатные мероприятия — раз в неделю</p>
-          <div><a class="btn btn--primary btn--m" href="#">{icon("send","icon icon--sm")}Подписаться в Telegram</a></div>
+        <div class="footer__col"><h3>Новости и акции</h3><p class="footer__muted footer__note">Даты стартов, скидки и бесплатные мероприятия — раз в неделю</p>
+          <div class="footer__tg"><a class="btn btn--primary btn--m" href="#">{icon("send","icon icon--sm")}Подписаться в Telegram</a></div>
           {store_badges()}</div>
         <div class="footer__col">
           {logo(True)}
@@ -456,6 +464,16 @@ def footer():
       <h2 class="t-h3" id="modal-title">Спасибо! Заявка принята</h2>
       <p class="t-body-m t-secondary">Методист перезвонит в течение 15 минут в рабочее время: Пн–Пт 9:00–20:00, Сб–Вс 10:00–16:00.</p>
       <button class="btn btn--primary btn--m" type="button" data-close>Хорошо</button>
+    </div>
+  </div>
+  <div class="modal" id="modal-cart" aria-hidden="true">
+    <div class="modal__overlay" data-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cart-modal-title">
+      <button class="icon-btn icon-btn--sm modal__close" type="button" data-close aria-label="Закрыть">{icon("close","icon icon--sm")}</button>
+      <div class="modal__icon">{icon("check")}</div>
+      <h2 class="t-h3" id="cart-modal-title">Курс добавлен в корзину</h2>
+      <p class="t-body-m t-secondary" data-cart-modal-course></p>
+      <div class="modal__actions"><a class="btn btn--primary btn--m" href="cart.html">Перейти в корзину</a><button class="btn btn--outline btn--m" type="button" data-close>Продолжить выбор</button></div>
     </div>
   </div>'''
 
@@ -562,19 +580,31 @@ def section_head(title, lead=None, center=True, tag="h2"):
     lead_html = f'<p class="section-head__lead">{lead}</p>' if lead else ""
     return f'<div class="section-head{" section-head--center" if center else ""} reveal"><{tag} class="section-head__title">{title}</{tag}>{lead_html}</div>'
 
-def course_card(title, meta, old, price, badges, image, href=None, btn="Записаться на курс"):
+def course_card(title, meta, old, price, badges, image, href=None, btn="Записаться на курс", cart=False):
     b = "".join(f'<span class="badge badge--{k}">{t}</span>' for k,t in badges)
     if href is None:
         href = READY_COURSE
     hover = " card-hover" if href != "#" else ""
     old_html = f'<span class="course-card__old">{old}</span>' if old else ""
-    return f'''<article class="course-card{hover} reveal">
+    # для фильтров каталога: цена числом и демо-теги (COURSE_TAGS) — отбор в main.js, на бэкенде — запрос
+    tags = COURSE_TAGS.get(title)
+    fattrs = ""
+    if tags:
+        fattrs = f' data-price="{"".join(ch for ch in price if ch.isdigit())}"' + "".join(f' data-f-{k}="{v}"' for k, v in tags.items())
+    # в каталоге рядом с «Записаться» — круглая кнопка «в корзину» (заказчик, 30.09, макет 2036-12367)
+    enroll = f'<a class="btn btn--primary btn--m" href="#lead">{btn}</a>'
+    buy_html = enroll
+    if cart:
+        buy_html = (f'<div class="course-card__buy">{enroll}<button class="icon-btn course-card__cart" type="button" '
+                    f'aria-pressed="false" aria-label="Добавить в корзину: {title}" data-add-to-cart>'
+                    f'{icon("cart","icon course-card__cart-add")}{icon("close","icon course-card__cart-remove")}</button></div>')
+    return f'''<article class="course-card{hover} reveal"{fattrs}>
         <div class="course-card__media media-zoom">{img(image, title, 880, 540)}<div class="course-card__badges">{b}</div></div>
         <div class="course-card__body">
           <h3 class="course-card__title"><a href="{href}">{title}</a></h3>
           <p class="course-card__meta">{meta}</p>
           <p class="course-card__price">{old_html}<span class="course-card__now">{price}</span></p>
-          <div class="course-card__actions"><a class="btn btn--primary btn--m" href="#lead">{btn}</a><a class="more-link" href="{href}">Подробнее{icon("arrow-right")}</a></div>
+          <div class="course-card__actions">{buy_html}<a class="more-link" href="{href}">Подробнее{icon("arrow-right")}</a></div>
         </div>
       </article>'''
 
@@ -707,7 +737,7 @@ def why_block():
     return f'''<section class="container" aria-labelledby="why-title">
       <div class="why">
         <div class="section-head section-head--center reveal"><h2 class="section-head__title" id="why-title">Почему выбирают МЦПО</h2><p class="section-head__lead">{ORG_BRAND} обучает медицинских специалистов более 20 лет. Лицензия {LICENSE_FULL}. Программы соответствуют профстандартам, а документы вносятся в федеральный реестр ФИС ФРДО.</p></div>
-        <a class="btn btn--primary reveal" href="#">Подробнее о центре</a>
+        <a class="btn btn--primary reveal" href="about.html">Подробнее о центре</a>
         <div class="why__stats" data-stagger>{s}</div>
       </div>
     </section>'''
@@ -730,7 +760,7 @@ POPULAR = [("Медицинский массаж: повышение квали�
 
 def home():
     tiles = [("Медицинская подготовка","tile-med"),("Аккредитация медработников","tile-accred"),("Косметология","tile-cosm"),("Массаж и реабилитация","tile-massage")]
-    tiles_html = "".join(f'<a class="cat-tile" href="{FAC_LINKS.get(t, "#")}">{img(i,"",626,626)}<span class="cat-tile__title">{t}</span><span class="icon-btn">{icon("arrow-up-right","icon icon--sm")}</span></a>' for t,i in tiles)
+    tiles_html = "".join(f'<a class="cat-tile" href="{fac_href(t)}">{img(i,"",626,626)}<span class="cat-tile__title">{t}</span><span class="icon-btn">{icon("arrow-up-right","icon icon--sm")}</span></a>' for t,i in tiles)
     slides = [("hero","Повышение квалификации и переподготовка медицинских специалистов","Курсы для врачей, медсестёр, массажистов и косметологов с баллами НМО. Удостоверение вносим в ФИС ФРДО. Очно в Москве или дистанционно.","Преподаватель МЦПО показывает технику массажа слушателям"),
               ("course-desc","Курсы массажа с удостоверением — от классического до медицинского","66 программ для начинающих и практикующих специалистов: 80% занятий — практика на моделях у м. Автозаводская и Ботанический сад.","Занятие по классическому массажу"),
               ("quiz-doctor","Курсы НМО для врачей дистанционно — из любого города России","Лекции и тесты на платформе 24/7, баллы засчитываются на портале НМО, документ вносим в ФИС ФРДО.","Врач проходит курс повышения квалификации онлайн"),
@@ -739,19 +769,20 @@ def home():
     for i, (im, t, l, alt) in enumerate(slides):
         act = " is-active" if i == 0 else ""
         load = ' fetchpriority="high"' if i == 0 else ' loading="lazy" decoding="async"'
-        media.append(f'<img class="hero-slider__img{act}" src="{img_src(im)}" alt="{alt}" width="1404" height="1300"{load}>')
+        # слайд (кадр) → фон по размеру кадра, стоит на месте → картинка, она и приближается 100 → 140 % (30.09)
+        media.append(f'<div class="hero-slider__slide{act}"><div class="hero-slider__bg"><img class="hero-slider__img" src="{img_src(im)}" alt="{alt}" width="1404" height="1300"{load}></div></div>')
         title = f"<h1>{t}</h1>" if i == 0 else f'<p class="t-h1">{t}</p>'
         hidden = "" if i == 0 else ' aria-hidden="true"'
         texts.append(f'<div class="hero-slider__text{act}"{hidden}>{title}</div>')
         prog.append(f'<span class="hero-progress__seg{act}"><i></i></span>')
     slides_media, slides_text, slides_progress = "".join(media), "".join(texts), "".join(prog)
     dirs = [("Массаж и реабилитация","66 курсов","dir-massage"),("Косметология","39 курсов","dir-cosm"),("Медицинская подготовка","155 курсов","dir-med"),("Здоровье и развитие ребёнка","8 курсов","dir-child")]
-    dirs_html = "".join(f'<a class="dir-tile reveal" href="{FAC_LINKS.get(t, "#")}">{img(i,"",660,854)}<span class="badge badge--count">{c}</span><span class="dir-tile__title">{t}</span></a>' for t,c,i in dirs)
+    dirs_html = "".join(f'<a class="dir-tile reveal" href="{fac_href(t)}">{img(i,"",660,854)}<span class="badge badge--count">{c}</span><span class="dir-tile__title">{t}</span></a>' for t,c,i in dirs)
     faq_html, faq_ld = faq_block("Частые вопросы об обучении", HOME_FAQ)
     body = f'''
     <section class="container" aria-label="Главный экран">
       <div class="hero">
-        <div class="hero__main hero-slider" data-hero-slider data-interval="6000">
+        <div class="hero__main hero-slider" data-hero-slider data-interval="4000">
           <div class="hero-slider__media" aria-hidden="true">{slides_media}</div>
           <div class="hero-slider__body">
             <div class="hero-slider__texts" aria-live="polite">{slides_text}</div>
@@ -765,11 +796,11 @@ def home():
       </div>
     </section>
 
-    <section class="section container" aria-labelledby="popular-title">
+    <section class="section container" id="courses" aria-labelledby="popular-title">
       {section_head("Популярные курсы повышения квалификации","Программы с удостоверением установленного образца: очно в Москве или онлайн из любого города").replace('<h2 class="section-head__title">','<h2 class="section-head__title" id="popular-title">')}
       <div class="row" style="justify-content:center">{tabs(["Массаж","Косметология","Медицина","Диетология","Менеджмент"], 0, "Направления курсов")}</div>
       <div class="carousel stack gap-xl" data-carousel>
-        <div class="scroller courses-scroller" data-track>{"".join(course_card(*c) for c in POPULAR)}</div>
+        <div class="scroller courses-scroller" data-track>{"".join(course_card(*c, btn="Записаться", cart=True) for c in POPULAR)}</div>
         <div class="row gap-md" style="justify-content:center"><button class="carousel__btn" type="button" data-prev aria-label="Предыдущий курс">{icon("chevron-left")}</button><div class="dots" data-dots></div><button class="carousel__btn" type="button" data-next aria-label="Следующий курс">{icon("chevron-right")}</button></div>
       </div>
       <div class="row" style="justify-content:center"><a class="btn btn--outline" href="faculty-massage.html">Все курсы массажа</a></div>
@@ -789,23 +820,33 @@ def home():
     <section class="section container" aria-labelledby="bento-title">
       {section_head("Как МЦПО помогает стать востребованным специалистом","Практика на моделях, преподаватели из клиник и документы, которые принимает любой работодатель").replace('class="section-head__title"','class="section-head__title" id="bento-title"')}
       <div class="bento" data-stagger data-focus-list>
-        <article class="feature bento__diploma reveal"><div class="feature__media feature__media--tall-m"><picture><source media="(max-width: 767px)" srcset="{img_src("adv-diploma-tall")}" width="660" height="825">{img("adv-diploma","Выпускница МЦПО с удостоверением",748,440)}</picture></div><h3 class="feature__title">Удостоверение в ФИС ФРДО</h3><p class="feature__text">Документ установленного образца: сведения вносим в федеральный реестр — работодатель и аккредитационная комиссия проверят его онлайн.</p></article>
-        <article class="feature feature--deco bento__loyalty reveal"><h3 class="feature__title">Скидки до 35% постоянным слушателям</h3><p class="feature__text">Программа лояльности: чем больше курсов вы проходите, тем выгоднее следующий.</p>{img("adv-percent","",1028,798,"feature__deco")}</article>
+        <article class="feature bento__diploma reveal"><div class="feature__media feature__media--diploma">{img("adv-diploma-tall","Выпускница МЦПО с удостоверением",896,1120)}</div><h3 class="feature__title">Удостоверение в ФИС ФРДО</h3><p class="feature__text">Документ установленного образца: сведения вносим в федеральный реестр — работодатель и аккредитационная комиссия проверят его онлайн.</p></article>
+        <article class="feature feature--deco bento__loyalty reveal"><h3 class="feature__title">Скидки до 35% постоянным слушателям</h3><p class="feature__text">Программа лояльности: чем больше курсов вы проходите, тем выгоднее следующий.</p>{img("adv-percent","",454,333,"feature__deco")}</article>
         <article class="feature feature--photo bento__teachers reveal"><div class="stack gap-sm"><h3 class="feature__title">Преподаватели — практикующие врачи</h3><p class="feature__text">Ведут занятия специалисты с клинической практикой: разбирают реальные случаи, а не только теорию.</p></div>{img("adv-teachers","Преподаватели МЦПО",748,560,"feature__photo")}</article>
         <article class="feature bento__access reveal"><h3 class="feature__title">Материалы остаются у вас</h3><p class="feature__text">Доступ к лекциям, видео и методичкам на платформе — без ограничения срока.</p></article>
-        <article class="feature feature--row bento__format reveal"><div class="stack gap-sm"><h3 class="feature__title">Очно в Москве или дистанционно</h3><p class="feature__text">Практика в учебных классах у м. Автозаводская и Ботанический сад или онлайн-обучение из любого города России — документ одинаковый.</p></div>{img("adv-online","Онлайн-занятие по массажу",454,333,"feature__side")}</article>
+        <article class="feature feature--row bento__format reveal"><div class="stack gap-sm"><h3 class="feature__title">Очно в Москве или дистанционно</h3><p class="feature__text">Практика в учебных классах у м. Автозаводская и Ботанический сад или онлайн-обучение из любого города России — документ одинаковый.</p></div>{img("adv-online","Онлайн-занятие по массажу",1028,798,"feature__side")}</article>
         <article class="feature bento__approach reveal"><h3 class="feature__title">Небольшие группы и индивидуальный формат</h3><p class="feature__text">Преподаватель успевает поставить руку каждому. Можно учиться индивидуально в удобное время.</p></article>
+      </div>
+    </section>
+
+{teachers_block()}
+
+    <section class="container" aria-labelledby="app-title">
+      <div class="app reveal">
+        {img("app-bg","",1380,465,"app__bg")}
+        <div class="stack gap-lg"><h2 id="app-title">Учитесь в приложении — с телефона и в любое время</h2><p class="t-secondary">Лекции, тесты и связь с преподавателем в одном приложении. Прогресс сохраняется между телефоном и компьютером.</p>{store_badges()}</div>
+        {img("app-phone","Приложение МЦПО на смартфоне",463,434,"app__phone")}
       </div>
     </section>
 
     <section class="container" aria-labelledby="docs-title">
       <div class="docs reveal">
-        <div class="stack gap-lg"><h2 id="docs-title">Документы, которые вы получите</h2><p class="t-secondary">Удостоверение о повышении квалификации или диплом о профессиональной переподготовке установленного образца. Сведения вносим в ФИС ФРДО.</p><div class="docs__more"><a class="btn btn--primary" href="#">Смотреть образцы</a></div></div>
+        <div class="stack gap-lg"><h2 id="docs-title">Документы, которые вы получите</h2><p class="t-secondary">Удостоверение о повышении квалификации или диплом о профессиональной переподготовке установленного образца. Сведения вносим в ФИС ФРДО.</p><div class="docs__more"><a class="btn btn--primary" href="#courses">К курсам</a></div></div>
         <div class="docs__imgs">{img("doc-1","Образец удостоверения о повышении квалификации",462,672)}{img("doc-2","Образец диплома о профессиональной переподготовке",250,350)}{img("doc-3","Образец диплома",462,672)}</div>
       </div>
     </section>
 
-{reviews_block()}
+    {licences_block(JOBS_DOCS, HOME_LIC_LEAD)}
 
     <section class="section container" aria-labelledby="jobs-title">
       {section_head("Помогаем с трудоустройством после обучения","Массажисты и косметологи востребованы в клиниках, SPA-центрах и частной практике. Передаём резюме выпускников партнёрам и учим выстраивать собственную практику.").replace('class="section-head__title"','class="section-head__title" id="jobs-title"')}
@@ -818,16 +859,10 @@ def home():
       </div>
     </section>
 
-    <section class="container" aria-labelledby="app-title">
-      <div class="app reveal">
-        {img("app-bg","",1380,465,"app__bg")}
-        <div class="stack gap-lg"><h2 id="app-title">Учитесь в приложении — с телефона и в любое время</h2><p class="t-secondary">Лекции, тесты и связь с преподавателем в одном приложении. Прогресс сохраняется между телефоном и компьютером.</p>{store_badges()}</div>
-        {img("app-phone","Приложение МЦПО на смартфоне",463,434,"app__phone")}
-      </div>
-    </section>
+{reviews_block()}
 
-{teachers_block()}
 {faq_html}
+
 {map_block()}
 '''
     return page("index.html","Курсы повышения квалификации для врачей и медработников в Москве — МЦПО",
@@ -843,12 +878,23 @@ MASSAGE_FAQ = [("Нужно ли медицинское образование �
 # ---------- Каталог (факультет массажа, курсы для врачей) ----------
 def price_group(ph_from, ph_to):
     return (f'<fieldset class="filter-group"><legend>Стоимость, ₽</legend><div class="range">'
-            f'<input type="number" inputmode="numeric" placeholder="{ph_from}" aria-label="Цена от">'
-            f'<input type="number" inputmode="numeric" placeholder="{ph_to}" aria-label="Цена до"></div></fieldset>')
+            f'<input type="number" inputmode="numeric" placeholder="{ph_from}" aria-label="Цена от" data-price="min">'
+            f'<input type="number" inputmode="numeric" placeholder="{ph_to}" aria-label="Цена до" data-price="max"></div></fieldset>')
 
-def check_group(title, opts):
-    # галочек по умолчанию нет: каталог открывается без фильтров, счётчик у кнопок скрыт
-    return f'<fieldset class="filter-group"><legend>{title}</legend>' + "".join(f'<label class="check"><input type="checkbox" name="f"><span class="check__box"></span><span>{o}</span></label>' for o in opts) + '</fieldset>'
+def check_group(title, opts, key="", vals=None):
+    # галочек по умолчанию нет: каталог открывается без фильтров, счётчик у кнопок скрыт.
+    # key и vals — для мгновенного отбора: группа data-filter="key", у галочек value, у карточек data-f-key (COURSE_TAGS)
+    attr = f' data-filter="{key}"' if key else ""
+    vals = vals or [""] * len(opts)
+    items = "".join('<label class="check"><input type="checkbox" name="f"' + (f' value="{v}"' if v else "")
+                    + f'><span class="check__box"></span><span>{o}</span></label>' for o, v in zip(opts, vals))
+    return f'<fieldset class="filter-group"{attr}><legend>{title}</legend>{items}</fieldset>'
+
+def catalog_empty(noun):
+    """Пусто после фильтров: текст и «Сбросить фильтры» (main.js, data-filters-reset)."""
+    return (f'<div class="catalog__empty" data-catalog-empty hidden><p class="t-h4">Нет {noun} с такими условиями</p>'
+            f'<p class="t-body-s t-muted">Измените фильтры или сбросьте их.</p>'
+            f'<button class="btn btn--outline btn--m" type="button" data-filters-reset>Сбросить фильтры</button></div>')
 
 def catalog_filters(groups, apply_label):
     """Фильтры: на компьютере — колонка слева от курсов, по умолчанию скрыта: её показывает и прячет
@@ -863,14 +909,21 @@ def catalog_filters(groups, apply_label):
           </div>
         </aside>'''
 
-def catalog_mobile_bar(caption, items):
-    """Телефон: над курсами вместо ряда вкладок — выбор направления (раздел → направление)
-    и значок фильтров со счётчиком. Список синхронизирован с вкладками (main.js)."""
-    opts = "".join(f'<option{" selected" if i == 0 else ""}>{t}</option>' for i, t in enumerate(items))
+def catalog_tags(items, label):
+    """Теги направлений над каталогом. По умолчанию не выбран ни один — показаны все курсы раздела
+    (заказчик, 30.09; раньше был выбран первый). Тег выбирает направление, повторное нажатие снимает
+    выбор; название в полосе над курсами и список на телефоне следуют за ним (main.js)."""
+    return (f'<div class="tabs tabs--wrap catalog__tabs" role="group" aria-label="{label}">'
+            + "".join(f'<button class="tab tab--l" type="button" aria-pressed="false">{t}</button>' for t in items) + '</div>')
+
+def catalog_mobile_bar(caption, items, all_label):
+    """Телефон: над курсами вместо ряда тегов — выбор направления (раздел → направление)
+    и значок фильтров со счётчиком. Первым пунктом «все» — выбран по умолчанию, как и теги (main.js)."""
+    opts = f'<option selected>{all_label}</option>' + "".join(f'<option>{t}</option>' for t in items)
     return f'''<div class="catalog__mobile-bar">
             <label class="dir-select">
               <span class="dir-select__caption">{caption}</span>
-              <span class="dir-select__value" data-dir-value>{items[0]}</span>
+              <span class="dir-select__value" data-dir-value>{all_label}</span>
               {icon("chevron-down","icon icon--sm dir-select__icon")}
               <select class="dir-select__native" data-dir-select aria-label="Направление"><optgroup label="{caption}">{opts}</optgroup></select>
             </label>
@@ -895,10 +948,52 @@ MASSAGE_COURSES = [("Медицинский массаж: повышение к�
                ("Лимфодренажный массаж","Ручные техники · отработка на моделях","12 000 ₽","от 9 500 ₽",[("edu","без мед. образования"),("hours","24 ак. ч.")],"dir-massage"),
                ("Массаж при заболеваниях позвоночника","Для массажистов с опытом · сертификат","18 000 ₽","от 14 400 ₽",[("edu","с мед. образованием"),("hours","36 ак. ч.")],"tile-massage")]
 
+# Цитаты преподавателей факультета массажа — слайдер вместо одного блока «Руководитель факультета»
+# (заказчик, 30.09, макет 973-9580). (фото, ширина, высота, имя, пометки, цитата).
+# ДЕМО: имена и фото — из макетов, цитаты Селявина и Гаврилова написаны для вёрстки —
+# заменить настоящими и согласовать с преподавателями. У каждого слайда своё лицо.
+FACULTY_QUOTES = [
+    ("expert", 818, 910, "Шепелев Владимир Иванович", ["Руководитель факультета", "Стаж 15 лет", "Врач ЛФК и спортивной медицины"],
+     "Массаж — это прежде всего анатомия. Поэтому на курсах мы сначала учим понимать, что происходит под руками, "
+     "и только потом — технику. Выпускник должен уверенно работать с первым клиентом, а не бояться навредить."),
+    ("teacher", 600, 720, "Селявин Михаил Юрьевич", ["Преподаватель", "Стаж преподавания 10 лет", "Медицинский массажист"],
+     "На практике я подхожу к каждому и ставлю руку: как лечь ладонью, с какой силой работать, где остановиться. "
+     "Этому не научит видеоурок — только занятия на моделях рядом с преподавателем."),
+    ("tutor-shepelev", 800, 1067, "Гаврилов Денис Олегович", ["Преподаватель", "Стаж 10 лет", "Медицинский массажист"],
+     "Сеанс начинается с разговора: что беспокоит, где болит, есть ли противопоказания. Мы учим не только технике, "
+     "но и работе с клиентом — именно после этого к массажисту записываются снова."),
+]
+
+def quote_slider(quotes, title):
+    """Слайдер цитат: фото слева с прогрессом (как у слайдера главной), справа серая карточка —
+    пометки, имя, цитата в <blockquote> внутри <figure>, круглая бирюзовая стрелка «дальше».
+    Листается сам (data-interval), по стрелке — сразу; под курсором и в фокусе стоит (main.js)."""
+    pics, slides, segs = [], [], []
+    for i, (pic, w, h, name, tags, text) in enumerate(quotes):
+        act = " is-active" if i == 0 else ""
+        hidden = "" if i == 0 else ' aria-hidden="true"'
+        pics.append(img(pic, f"{name}, {tags[0].lower()}", w, h, f"expert__pic{act}"))
+        tags_html = "".join(f"<span>{t}</span>" for t in tags)
+        slides.append(f'<figure class="expert__slide{act}" aria-roledescription="слайд" aria-label="{i + 1} из {len(quotes)}"{hidden}>'
+                      f'<figcaption class="expert__head"><span class="expert__tags">{tags_html}</span>'
+                      f'<span class="expert__name">{name}</span></figcaption>'
+                      f'<blockquote class="expert__quote">{QUOTE_MARK}<p>{text}</p>{QUOTE_MARK_END}</blockquote></figure>')
+        segs.append(f'<span class="hero-progress__seg{act}"><i></i></span>')
+    return f'''<section class="container" aria-labelledby="quotes-title">
+      <h2 class="visually-hidden" id="quotes-title">{title}</h2>
+      <div class="expert reveal" data-quote-slider data-interval="8000" aria-roledescription="карусель">
+        <div class="expert__photo">{"".join(pics)}<div class="hero-progress expert__progress" aria-hidden="true">{"".join(segs)}</div></div>
+        <div class="expert__card">
+          <div class="expert__slides">{"".join(slides)}</div>
+          <button class="icon-btn expert__next" type="button" aria-label="Следующая цитата">{icon("chevron-right")}</button>
+        </div>
+      </div>
+    </section>'''
+
 def faculty():
     cr = [("Главная","index.html"),("Каталог курсов","faculty-massage.html"),("Массаж и реабилитация","faculty-massage.html")]
     subs = ["Медицинский и оздоровительный массаж","ЛФК и спортивная медицина","SPA-процедуры и коррекция фигуры","Медицинская реабилитация","Массаж лица","Детский массаж"]
-    subs_html = '<div class="tabs tabs--wrap catalog__tabs" role="tablist" aria-label="Подкатегории">' + "".join(f'<button class="tab tab--l{" is-active" if i==0 else ""}" type="button" role="tab" aria-selected="{"true" if i==0 else "false"}" tabindex="{0 if i==0 else -1}">{t}</button>' for i,t in enumerate(subs)) + '</div>'
+    subs_html = catalog_tags(subs, "Направления")
     courses = MASSAGE_COURSES
     whom =[("num-1","Новичкам без опыта","Освоите анатомию и базовые техники классического массажа с нуля и сможете принимать первых клиентов."),("num-2","Практикующим массажистам","Добавите медицинский, лимфодренажный и спортивный массаж, расширите услуги и поднимете стоимость сеанса."),("num-3","Медсёстрам и специалистам смежных сфер","Получите сертификат «Медицинский массаж», а фитнес-тренеры и косметологи — востребованный навык.")]
     whom_html = "".join(f'<article class="whom-card reveal"><div class="whom-card__head">{img(i,"",147,192)}<h3>{t}</h3></div><p class="t-body-s t-muted">{d}</p></article>' for i,t,d in whom)
@@ -919,13 +1014,17 @@ def faculty():
       {subs_html}
       <div class="catalog">
         {catalog_filters(price_group("от 5 000", "до 120 000")
-                         + check_group("Ваше образование",["Без медицинского","Среднее медицинское","Высшее медицинское","Знаю основы массажа"])
-                         + check_group("Форма обучения",["Онлайн","Очно в Москве","Индивидуально","Интенсив","По выходным"])
-                         + check_group("Документ",["Удостоверение о ПК","Диплом о переподготовке","Сертификат","С баллами НМО"]), "Показать курсы")}
+                         + check_group("Ваше образование",["Без медицинского","Среднее медицинское","Высшее медицинское","Знаю основы массажа"],
+                                       "edu", ["none","sred","vyssh","basics"])
+                         + check_group("Форма обучения",["Онлайн","Очно в Москве","Индивидуально","Интенсив","По выходным"],
+                                       "form", ["online","offline","individual","intensive","weekend"])
+                         + check_group("Документ",["Удостоверение о ПК","Диплом о переподготовке","Сертификат","С баллами НМО"],
+                                       "doc", ["pk","pp","cert","nmo"]), "Показать курсы")}
         <div class="catalog__results">
-          {catalog_mobile_bar("Массаж и реабилитация", subs)}
-          {catalog_bar("Медицинский и оздоровительный массаж", "Найдено 24 курса")}
-          <div class="grid catalog__grid" data-stagger>{"".join(course_card(*c, btn="Записаться") for c in courses)}</div>
+          {catalog_mobile_bar("Массаж и реабилитация", subs, "Все направления")}
+          {catalog_bar("Массаж и реабилитация", "Найдено 66 курсов")}
+          <div class="grid catalog__grid" data-stagger>{"".join(course_card(*c, btn="Записаться", cart=True) for c in courses)}</div>
+          {catalog_empty("курсов")}
         </div>
       </div>
     </section>
@@ -940,23 +1039,17 @@ def faculty():
       {persp}
     </section>
 
-{reviews_block("Отзывы выпускников курсов массажа")}
-{lead_block()}
+{quote_slider(FACULTY_QUOTES, "Преподаватели факультета о профессии")}
 
-    <section class="container" aria-label="Руководитель факультета">
-      <div class="expert reveal">
-        <div class="expert__photo">{img("expert","Шепелев Владимир Иванович — руководитель факультета массажа",818,910)}</div>
-        <div class="expert__card">
-          <div class="expert__tags"><span>Руководитель факультета</span><span>Стаж 15 лет</span><span>Врач ЛФК и спортивной медицины</span></div>
-          <h2>Шепелев Владимир Иванович</h2>
-          <blockquote class="expert__quote">«Массаж — это прежде всего анатомия. Поэтому на курсах мы сначала учим понимать, что происходит под руками, и только потом — технику. Выпускник должен уверенно работать с первым клиентом, а не бояться навредить».</blockquote>
-        </div>
-      </div>
-    </section>
+{teachers_block()}
+
+{reviews_block("Отзывы выпускников курсов массажа")}
 
 {faq_html}
+
+{lead_block()}
+
 {map_block()}
-{teachers_block()}
 '''
     return page("faculty-massage.html","Курсы массажа в Москве с удостоверением — обучение от 16 900 ₽ | МЦПО",
                 "Курсы массажа с нуля и повышение квалификации по медицинскому массажу: 66 программ, 80% практики, удостоверение в ФИС ФРДО. Очно в Москве и онлайн.",
@@ -1281,8 +1374,7 @@ def cart():
     body = f'''
     <section class="container intro">
       {intro(cr,"Корзина")}
-      <div class="stack gap-lg">{it}</div>
-      <p class="t-body-m t-secondary" data-cart-empty hidden>Корзина пуста. <a class="link" href="faculty-massage.html">Перейти в каталог</a></p>
+      <div class="stack gap-lg">{it}<p class="t-body-m t-secondary" data-cart-empty hidden>Корзина пуста. <a class="link" href="faculty-massage.html">Перейти в каталог</a></p></div>
       <p class="t-body-s t-muted">Вернём 13% через налоговый вычет — справку выдаём бесплатно</p>
     </section>
 '''
@@ -1401,10 +1493,28 @@ DOCTOR_COURSES = [("Кардиология — повышение квалифи
                ("Физиотерапия — профессиональная переподготовка, 504 ч","Новая специальность · диплом о переподготовке","","18 300 ₽",[("edu","высшее медицинское"),("hours","504 ак. ч.")],"dir-med"),
                ("Авиационная и космическая медицина, 36 ч","Короткая программа со свидетельством НМО","","4 500 ₽",[("nmo","свидетельство НМО"),("hours","36 ак. ч.")],"tile-med")]
 
+# Демо-теги для мгновенных фильтров каталога (заказчик, 30.09: фильтры применяются сразу, без кнопки).
+# Ключ — data-f-<ключ> у карточки, значения через пробел; галочки группы — value из того же списка.
+# «Ваше образование»: какие слушатели допускаются. Настоящие данные отдаст бэкенд.
+COURSE_TAGS = {
+    "Медицинский массаж: повышение квалификации, 144 ч":   {"edu": "sred vyssh", "form": "online offline", "doc": "pk"},
+    "Медицинский массаж: первичная специализация, 288 ч": {"edu": "sred vyssh", "form": "offline weekend", "doc": "pp"},
+    "Классический массаж с нуля":                         {"edu": "none sred vyssh basics", "form": "online offline individual", "doc": "cert"},
+    "Антицеллюлитный массаж":                             {"edu": "none sred vyssh basics", "form": "offline intensive", "doc": "cert"},
+    "Лимфодренажный массаж":                              {"edu": "none sred vyssh basics", "form": "offline individual weekend", "doc": "cert"},
+    "Массаж при заболеваниях позвоночника":               {"edu": "sred vyssh", "form": "offline", "doc": "cert"},
+    "Кардиология — повышение квалификации, 144 ч":        {"hours": "144", "doc": "pk", "form": "online"},
+    "Неврология — повышение квалификации, 144 ч":         {"hours": "144", "doc": "pk", "form": "online"},
+    "Анестезиология-реаниматология, 144 ч":               {"hours": "144", "doc": "pk", "form": "online"},
+    "Диетология — профессиональная переподготовка, 504 ч": {"hours": "250-504", "doc": "pp", "form": "online"},
+    "Физиотерапия — профессиональная переподготовка, 504 ч": {"hours": "250-504", "doc": "pp", "form": "online"},
+    "Авиационная и космическая медицина, 36 ч":           {"hours": "36", "doc": "nmo", "form": "online"},
+}
+
 def doctors():
     cr = [("Главная","index.html"),("Курсы для врачей","doctors.html")]
     groups = ["Терапия и общая практика","Неврология и психиатрия","Хирургия","Диагностика","Анестезиология и реанимация","Организация здравоохранения"]
-    groups_html = '<div class="tabs tabs--wrap catalog__tabs" role="tablist" aria-label="Группы специальностей">' + "".join(f'<button class="tab tab--l{" is-active" if i==0 else ""}" type="button" role="tab" aria-selected="{"true" if i==0 else "false"}" tabindex="{0 if i==0 else -1}">{t}</button>' for i,t in enumerate(groups)) + '</div>'
+    groups_html = catalog_tags(groups, "Группы специальностей")
 
     courses = DOCTOR_COURSES
 
@@ -1423,13 +1533,17 @@ def doctors():
       {groups_html}
       <div class="catalog">
         {catalog_filters(price_group("от 2 500", "до 40 000")
-                         + check_group("Объём программы",["36 часов","144 часа","250–504 часа","Более 504 часов"])
-                         + check_group("Документ",["Удостоверение о ПК","Диплом о переподготовке","Свидетельство НМО"])
-                         + check_group("Формат",["Дистанционно","Очно в Москве","Индивидуально"]), "Показать программы")}
+                         + check_group("Объём программы",["36 часов","144 часа","250–504 часа","Более 504 часов"],
+                                       "hours", ["36","144","250-504","504+"])
+                         + check_group("Документ",["Удостоверение о ПК","Диплом о переподготовке","Свидетельство НМО"],
+                                       "doc", ["pk","pp","nmo"])
+                         + check_group("Формат",["Дистанционно","Очно в Москве","Индивидуально"],
+                                       "form", ["online","offline","individual"]), "Показать программы")}
         <div class="catalog__results">
-          {catalog_mobile_bar("Курсы для врачей", groups)}
-          {catalog_bar("Терапия и общая практика", "Найдено 52 программы")}
-          <div class="grid catalog__grid" data-stagger>{"".join(course_card(*c, btn="Записаться") for c in courses)}</div>
+          {catalog_mobile_bar("Курсы для врачей", groups, "Все специальности")}
+          {catalog_bar("Курсы для врачей", "Найдено 52 программы")}
+          <div class="grid catalog__grid" data-stagger>{"".join(course_card(*c, btn="Записаться", cart=True) for c in courses)}</div>
+          {catalog_empty("программ")}
         </div>
       </div>
     </section>
@@ -1883,15 +1997,16 @@ def jobs_wall(btn):
     </section>'''
 
 
-def licences_block(docs):
+def licences_block(docs, lead=ABOUT_LOREM):
     """«Лицензии и документы»: тёмная карточка, сканы листаются по кругу ([data-carousel]).
-    Общий блок «О нас» и «Трудоустройства», набор сканов у каждой страницы свой."""
+    Общий блок «О нас», «Трудоустройства» и главной, набор сканов у каждой страницы свой.
+    lead — подзаголовок: на «О нас» и «Трудоустройстве» пока рыба из макета (ABOUT_LOREM)."""
     scans = "".join(img(n, a, w, h) for n, a, w, h in docs)
     return f'''<section class="container" aria-labelledby="lic-title">
       <div class="licences reveal" data-carousel>
         <div class="licences__text">
           <h2 id="lic-title">Лицензии и документы</h2>
-          <p class="licences__lead">{ABOUT_LOREM}</p>
+          <p class="licences__lead">{lead}</p>
           <div class="row gap-md">
             <button class="carousel__btn" type="button" data-prev aria-label="Назад">{icon("chevron-left")}</button>
             <button class="carousel__btn" type="button" data-next aria-label="Вперёд">{icon("chevron-right")}</button>
@@ -1927,7 +2042,7 @@ def about():
         </article>''' for v, pic in ABOUT_NUMBERS)
 
     tiles = "".join(
-        f'<a class="dir-tile reveal" href="{FAC_LINKS.get(t, "#")}">{img(i,"",660,854)}'
+        f'<a class="dir-tile reveal" href="{fac_href(t)}">{img(i,"",660,854)}'
         f'<span class="badge badge--count">{c}</span><span class="dir-tile__title">{t}</span></a>'
         for t, c, i in [("Массаж и реабилитация", "66 курсов", "dir-massage"),
                         ("Косметология", "39 курсов", "dir-cosm"),
@@ -2041,6 +2156,11 @@ JOBS_REASONS = [
     ("access", "Неограниченный доступ к материалам", "Все учебные материалы останутся у вас в личном кабинете навсегда.", ""),
     ("percent", "Программа лояльности", "Скидки для постоянных клиентов до <b>−35%</b>", "dark"),
 ]
+
+# Подзаголовок блока лицензий на главной (заказчик, 30.09): без номера — на сканах № 036718,
+# а на сайте везде LICENSE (№ 041596, со старого сайта); какой верный — вопрос заказчику.
+HOME_LIC_LEAD = ("Обучаем по лицензии Департамента образования Москвы. Удостоверения и дипломы вносим в ФИС ФРДО — "
+                 "работодатель и аккредитационная комиссия проверят документ онлайн.")
 
 JOBS_DOCS = ABOUT_DOCS + [("doc-license-annex-2", "Приложение № 1.1 к лицензии № 036718, оборотная сторона", 500, 693)]
 

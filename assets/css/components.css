@@ -104,7 +104,7 @@
 }
 .tab--l { padding: 12px 18px; font-size: var(--font-body-m); line-height: var(--line-body-m); background: var(--color-bg-surface); }
 @media (hover: hover) { .tab:hover { background: var(--color-bg-surface-alt); } }
-.tab.is-active, .tab[aria-selected="true"] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+.tab.is-active, .tab[aria-selected="true"], .tab[aria-pressed="true"] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
 .tab--on-white { background: var(--color-bg-page); }
 
 /* ---------- Field (input) ---------- */
@@ -181,14 +181,27 @@
 @media (max-width: 767px) { .logo__mark { width: 112px; height: 38px; } .header .logo__text { display: none; } }
 
 /* ---------- Promo bar ---------- */
+/* Перелив фона — отдельный слой ::before, который едет transform'ом (его ведёт видеокарта):
+   полоса из двух повторов градиента шириной 400 % сдвигается ровно на один повтор, стык не виден.
+   Раньше двигался background-position — полоса перерисовывалась на каждом кадре всё время,
+   пока открыта страница, и отнимала кадры у слайдера под ней (заказчик, 29.09). */
 .promo {
   position: relative;
-  background: linear-gradient(90deg, var(--color-bg-promo), var(--color-bg-promo-light), var(--color-bg-promo));
-  background-size: 200% 100%;
-  animation: promo-shift 8s linear infinite;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--color-bg-promo);
   color: var(--color-text-inverse);
 }
-@keyframes promo-shift { to { background-position: -200% 0; } }
+.promo::before {
+  content: "";
+  position: absolute; top: 0; bottom: 0; left: -200%; z-index: -1;
+  width: 400%;
+  background: linear-gradient(90deg, var(--color-bg-promo), var(--color-bg-promo-light), var(--color-bg-promo)) 0 0 / 50% 100% repeat-x;
+  animation: promo-shift 8s linear infinite;
+  will-change: transform;
+  pointer-events: none;
+}
+@keyframes promo-shift { to { transform: translateX(50%); } }
 /* .promo__inner несёт ещё и класс .container — ширина берётся оттуда */
 .promo__inner { position: relative; display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 56px; padding: 8px 64px; }
 .promo__text { font-size: var(--font-promo); line-height: var(--line-promo); font-weight: var(--fw-bold); text-align: center; }
@@ -377,10 +390,20 @@
 @media (max-width: 767px) { .course-card__now { font-size: calc(var(--font-body-m) + 2px); font-weight: var(--fw-bold); } }
 .course-card__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .course-card__actions .btn { position: relative; z-index: 2; }
-.more-link { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-body-s); font-weight: var(--fw-medium); transition: color var(--dur-fast), gap var(--dur-fast); }
+/* «В корзину» рядом с «Записаться» — в каталоге и «Популярных курсах» (course_card(cart=True), макет 2036-12367):
+   белый круг на сером фоне карточки, при наведении просто темнее — не бирюзовый и не поворачивается (заказчик, 30.09).
+   Курс уже в корзине (aria-pressed="true") — вместо корзины крестик: нажатие убирает курс. main.js. */
+.course-card__buy { display: flex; align-items: center; gap: 12px; }
+.course-card__cart { position: relative; z-index: 2; width: 40px; height: 40px; background: var(--color-bg-page); }
+.course-card__cart .icon { width: 20px; height: 20px; }
+.course-card__cart-remove, .course-card__cart[aria-pressed="true"] .course-card__cart-add { display: none; }
+.course-card__cart[aria-pressed="true"] .course-card__cart-remove { display: block; }
+@media (hover: hover) { .course-card__cart:hover { background: var(--color-bg-neutral-hover); transform: none; } }
+/* «Подробнее»: при наведении только цвет — раньше стрелка отъезжала (gap 6 → 10 px), ссылка становилась шире и в карточке
+   курса перескакивала на новую строку. В карточке курса ховера у неё нет совсем (заказчик, 30.09). */
+.more-link { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-body-s); font-weight: var(--fw-medium); transition: color var(--dur-fast); }
 .more-link .icon { width: 16px; height: 16px; }
-@media (hover: hover) { .more-link:hover { color: var(--color-text-accent); gap: 10px; } }
-@media (hover: hover) { .course-card:hover .more-link { color: var(--color-text-accent); } }
+@media (hover: hover) { .more-link:hover { color: var(--color-text-accent); } .course-card .more-link:hover { color: inherit; } }
 
 /* ---------- Direction tile ---------- */
 .dir-tile { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; min-height: 427px; padding: 24px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
@@ -691,6 +714,7 @@
 .cart-item__remove { grid-column: 3; grid-row: 1; align-self: flex-start; }
 .cart-item.is-removing { animation: remove 0.35s var(--ease-out) forwards; }
 @keyframes remove { to { opacity: 0; transform: translateX(40px); } }
+/* «Корзина пуста» появляется на месте последнего курса одновременно с его схлопыванием — main.js */
 @media (max-width: 1199px) { .cart-item { grid-template-columns: 240px 1fr auto; gap: 16px 24px; padding: 24px; } }
 @media (max-width: 767px) {
   .cart-item { grid-template-columns: 96px 1fr 32px; grid-template-rows: auto auto; gap: 12px; padding: 12px; }
@@ -742,6 +766,8 @@
 .footer__form { display: flex; flex-direction: column; gap: 14px; }
 .footer__form .row { gap: 14px; align-items: flex-start; }
 .footer__form .field { flex: 1; }
+/* «Подобрать курс» — отступ сверху от галочки согласия: 14 → 24 px (заказчик, 30.09) */
+.footer__submit { margin-top: 10px; }
 .footer__divider { height: 1px; background: rgba(255,255,255,.15); }
 .footer__cols { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 360px; gap: 60px; padding-block: 48px; }
 .footer__col { display: flex; flex-direction: column; gap: 10px; }
@@ -749,6 +775,9 @@
 .footer__col a:not(.btn):not(.store-badge-img) { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .85; transition: opacity var(--dur-fast), color var(--dur-fast); }
 @media (hover: hover) { .footer__col a:not(.btn):not(.store-badge-img):hover { opacity: 1; color: var(--color-bg-accent); } }
 .footer__muted { font-size: var(--font-body-s); line-height: var(--line-body-s); opacity: .7; }
+/* «Даты стартов, скидки…» — отступ снизу до кнопки Telegram и под самой кнопкой до значков магазинов:
+   10 → 20 px (заказчик, 30.09) */
+.footer__note, .footer__tg { margin-bottom: 10px; }
 .footer__legal { font-size: var(--font-caption); line-height: var(--line-caption); opacity: .7; }
 .footer__portal { width: 300px; border-radius: 10px; background: #fff; }
 .footer__bottom { display: flex; flex-wrap: wrap; gap: 8px 40px; padding-block: 24px 32px; font-size: var(--font-caption); opacity: .7; }
@@ -781,6 +810,7 @@
 .modal__overlay { position: absolute; inset: 0; background: rgba(28,38,59,.55); opacity: 0; transition: opacity var(--dur-base); }
 .modal__dialog { position: relative; width: min(480px, 100%); max-width: 100%; padding: 40px 32px 32px; border-radius: var(--radius-lg); background: var(--color-bg-page); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; transform: translateY(16px) scale(.97); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
 .modal__close { position: absolute; right: 16px; top: 16px; }
+.modal__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 6px; }
 .modal__icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; background: var(--color-bg-accent-soft); color: var(--color-text-accent); }
 .modal__icon .icon { width: 36px; height: 36px; stroke-width: 2.4; stroke-dasharray: 30; stroke-dashoffset: 30; }
 .modal.is-open { visibility: visible; }
@@ -887,17 +917,27 @@ body.is-locked { overflow: hidden; }
 
 /* ---------- Hero slider (листается сам, прогресс под кнопками) ---------- */
 .hero-slider__media { position: absolute; inset: 0; z-index: -2; }
-/* Медленное «отдаление» (scale 1.07 → 1), ведёт main.js через Web Animations API.
-   1. Все картинки слайдера всё время в своих слоях (will-change). Раньше слой был только
-      у активной: на смене слайда браузер снимал его у уходящей и создавал у новой —
-      большая картинка перерисовывалась прямо во время перехода, отсюда рывок.
-   2. Наезд длится интервал + затухание и при смене слайда не обрывается: уходящая картинка
-      продолжает ехать, пока гаснет, и доезжает ровно к моменту, когда исчезла. Раньше она
-      замирала на смене и гасла неподвижной, а новая сразу ехала — глаз видел толчок.
-   3. Движение линейное и идёт в композиторе; перезапуск — у невидимой картинки, без
-      принудительного пересчёта раскладки. Покой — scale(1.07): с него наезд и начинается. */
-.hero-slider__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.07); will-change: transform, opacity; transition: opacity .9s var(--ease-out); }
-.hero-slider__img.is-active { opacity: 1; }
+/* Слайд — кадр: проявляется и гаснет прозрачностью. В нём фон — блок ровно по размеру кадра (как #bkg
+   в примере заказчика): он стоит на месте и обрезает картинку. Приближение пассивное (30.09): картинка
+   внутри фона сама растёт 100 % → 140 % за 28 с, linear infinite (в примере было 14 с — попросили медленнее,
+   30.09). Слайд листается раньше (интервал 4 с + затухание), поэтому на экране видно примерно 100 → 107 %.
+   При каждом показе рост начинается со 100 %. Класс .is-zooming ставит и снимает main.js.
+   Растёт от верхнего края (transform-origin: 50% 0, в примере фон тоже прижат к верху): при росте от центра
+   кадр срезает головы, у врача на слайде «Курсы НМО» макушка и в 100 % у самого края. Срезается низ кадра —
+   там, где заголовок.
+   1. Растёт transform: scale, а не background-size, как в примере: transform считает видеокарта, а
+      background-size перерисовывает большую картинку на каждом кадре — отсюда рывки. К тому же
+      background-size: 100% auto на телефоне не закрывает кадр по высоте, а cover + scale — на любом экране.
+   2. Прозрачность (слайд) и масштаб (картинка) — на разных блоках, у каждого свой слой на всё время
+      (will-change). Иначе на смене слайда браузер создаёт слой и перерисовывает картинку прямо в переходе.
+   3. Уходящий слайд растёт дальше, пока гаснет; в 100 % картинка возвращается, когда слайд уже не виден. */
+.hero-slider__slide { position: absolute; inset: 0; opacity: 0; transition: opacity .9s var(--ease-out); will-change: opacity; }
+.hero-slider__slide.is-active { opacity: 1; }
+.hero-slider__bg { position: absolute; inset: 0; overflow: hidden; }
+.hero-slider__img { display: block; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 0; will-change: transform; backface-visibility: hidden; }
+.hero-slider__slide.is-zooming .hero-slider__img { animation: hero-zoom 28s linear infinite; }
+.hero-slider.is-paused .is-zooming .hero-slider__img { animation-play-state: paused; }
+@keyframes hero-zoom { from { transform: scale(1); } to { transform: scale(1.4); } }
 .hero-slider__texts { display: grid; }
 /* Слайды лежат в одной ячейке грида, её высота = самый длинный заголовок.
    Прижимаем каждый к низу, иначе короткий заголовок повисает вверху ячейки
@@ -912,10 +952,10 @@ body.is-locked { overflow: hidden; }
 .hero-progress__seg { position: relative; flex: none; height: 8px; width: 8px; border-radius: 32px; background: #c1c2c1; overflow: hidden; transition: width .5s var(--ease-out); }
 .hero-progress__seg.is-active { width: clamp(120px, 16vw, 234px); }
 .hero-progress__seg i { position: absolute; inset: 0; transform: scaleX(0); transform-origin: left; background: #fff; border-radius: inherit; }
-.hero-progress__seg.is-active i { animation: hero-fill var(--hero-interval, 6s) linear forwards; }
+.hero-progress__seg.is-active i { animation: hero-fill var(--hero-interval, 4s) linear forwards; }
 .hero-slider.is-paused .hero-progress__seg.is-active i { animation-play-state: paused; }
 @keyframes hero-fill { to { transform: scaleX(1); } }
-@media (prefers-reduced-motion: reduce) { .hero-slider__img { animation: none !important; transform: none !important; } }
+@media (prefers-reduced-motion: reduce) { .hero-slider__img { animation: none !important; } }
 
 /* ---------- Schedule (макет 973:5768): равные колонки, текст по центру, крупная кнопка ---------- */
 @media (min-width: 768px) {

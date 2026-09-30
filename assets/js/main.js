@@ -788,11 +788,43 @@
     var empty = $('[data-cart-empty]');
     if (empty) empty.hidden = items.length > 0;
   }
+  // Удаление из корзины в два шага: курс уезжает вправо и гаснет (.is-removing, 0,35 с), затем его место плавно
+  // схлопывается — высота, поля и отступ до соседа уходят в ноль, и курсы ниже, и подвал поднимаются плавно.
+  // Раньше карточка пропадала разом, и подвал прыгал вверх на всю её высоту (заказчик, 30.09).
+  // Последний курс: «Корзина пуста» (она внутри того же списка) растёт на его месте в то же время — карточка
+  // сменяется строкой одним движением. Раньше строка выскакивала после схлопывания, и подвал дёргался обратно вниз.
+  var COLLAPSE = { duration: 500, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' };
+  function shown(el) { return el && !el.hidden && !el.classList.contains('is-removing'); }
   $$('[data-cart-remove]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var item = btn.closest('[data-cart-item]');
+      if (item.classList.contains('is-removing')) return;
       item.classList.add('is-removing');
-      setTimeout(function () { item.remove(); recalcCart(); }, reduceMotion ? 0 : 340);
+      if (reduceMotion || !item.animate) { item.remove(); recalcCart(); return; }
+      setTimeout(function () {
+        var list = item.parentElement, empty = $('[data-cart-empty]', list);
+        var last = $$('[data-cart-item]', list).every(function (el) { return el === item || el.classList.contains('is-removing'); });
+        if (last && empty) {
+          empty.hidden = false;
+          var eh = empty.offsetHeight;
+          empty.style.overflow = 'hidden';
+          empty.animate([{ height: '0px', opacity: 0, transform: 'translateY(6px)' }, { opacity: 0, offset: 0.3 },
+            { height: eh + 'px', opacity: 1, transform: 'none' }], COLLAPSE).onfinish = function () { empty.style.overflow = ''; };
+        }
+        var cs = getComputedStyle(item);
+        var next = item.nextElementSibling, prev = item.previousElementSibling;
+        while (next && !shown(next)) next = next.nextElementSibling;
+        while (prev && !shown(prev)) prev = prev.previousElementSibling;
+        var gap = (next || prev) ? (parseFloat(getComputedStyle(list).rowGap) || 0) : 0;
+        var side = next ? 'marginBottom' : 'marginTop';   // отступ до соседа уходит вместе с курсом
+        var from = { height: item.offsetHeight + 'px', paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom };
+        var to = { height: '0px', paddingTop: '0px', paddingBottom: '0px' };
+        // отступ до «Корзина пуста» появился только что — гасим его сразу, иначе страница подскочит в первом кадре
+        from[side] = (last && next === empty ? -gap : 0) + 'px'; to[side] = -gap + 'px';
+        item.style.overflow = 'hidden';
+        item.animate([from, to], Object.assign({ fill: 'forwards' }, COLLAPSE))
+          .onfinish = function () { item.remove(); recalcCart(); };
+      }, 340);
     });
   });
 
@@ -810,6 +842,144 @@
     filters.addEventListener('change', countChecked);
     countChecked();
   }
+
+  /* ---------- «В корзину» на карточке курса (демо — по-настоящему добавит бэкенд) ----------
+     Нажатие добавляет курс: счётчик корзины в шапке +1, открывается окно «Курс добавлен в корзину», на кнопке вместо
+     корзины крестик (aria-pressed, заказчик 30.09). Нажатие на крестик убирает курс — без окна. Для бэкенда — события
+     cart:add / cart:remove с названием курса. */
+  var cartModal = document.getElementById('modal-cart'), cartModalCourse = cartModal && $('[data-cart-modal-course]', cartModal);
+  var cartBtns = $$('[data-add-to-cart]');
+  cartBtns.forEach(function (btn) {
+    var card = btn.closest('.course-card'), titleEl = card && $('.course-card__title', card);
+    btn.cartTitle = titleEl ? titleEl.textContent.trim() : '';
+  });
+  cartBtns.forEach(function (btn) {
+    var title = btn.cartTitle;
+    btn.addEventListener('click', function () {
+      var added = btn.getAttribute('aria-pressed') !== 'true';
+      // у курса может быть несколько карточек (копии в бесконечной карусели «Популярных курсов») — меняем все сразу
+      cartBtns.forEach(function (b) {
+        if (b.cartTitle !== title) return;
+        b.setAttribute('aria-pressed', added ? 'true' : 'false');
+        b.setAttribute('aria-label', (added ? 'Убрать из корзины: ' : 'Добавить в корзину: ') + title);
+      });
+      $$('[data-cart-count]').forEach(function (el) { el.textContent = Math.max(0, (parseInt(el.textContent, 10) || 0) + (added ? 1 : -1)); });
+      btn.dispatchEvent(new CustomEvent(added ? 'cart:add' : 'cart:remove', { bubbles: true, detail: { title: title } }));
+      if (added && cartModal) {
+        if (cartModalCourse) cartModalCourse.textContent = '«' + title + '» — оформите заказ сейчас или выберите ещё курсы.';
+        openLayer(cartModal);
+      }
+    });
+  });
+
+  /* ---------- Фильтры каталога применяются сразу, без кнопки (заказчик, 30.09) ----------
+     Отбор демо-карточек: цена — data-price, галочки группы data-filter="ключ" — по data-f-ключ у карточки
+     (build.py, COURSE_TAGS). Внутри группы — любое из отмеченного, между группами — всё сразу.
+     На бэкенде здесь запрос к серверу: событие catalog:filter уходит с выбранными значениями.
+     Уходящие карточки гаснут, оставшиеся съезжают на новые места (FLIP), новые проявляются. */
+  var FLIP_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+  $$('.catalog').forEach(function (catalog) {
+    var aside = $('.catalog__filters', catalog), grid = $('.catalog__grid', catalog);
+    if (!aside || !grid) return;
+    var cards = $$('.course-card', grid);
+    var empty = $('[data-catalog-empty]', catalog);
+    var found = $('.catalog__bar .t-muted', catalog), foundText = found ? found.textContent : '';
+    var showBtn = $('.filters-foot .btn', aside), showText = showBtn ? showBtn.textContent : '';
+    var forms = /программ/.test(foundText) ? ['программа', 'программы', 'программ'] : ['курс', 'курса', 'курсов'];
+    function plural(n) {
+      var a = n % 10, b = n % 100;
+      return forms[a === 1 && b !== 11 ? 0 : a >= 2 && a <= 4 && (b < 12 || b > 14) ? 1 : 2];
+    }
+    function read() {
+      var st = { groups: [], min: null, max: null };
+      $$('[data-filter]', aside).forEach(function (fs) {
+        var vals = $$('input:checked', fs).map(function (i) { return i.value; });
+        if (vals.length) st.groups.push({ key: fs.getAttribute('data-filter'), values: vals });
+      });
+      var mn = $('[data-price="min"]', aside), mx = $('[data-price="max"]', aside);
+      if (mn && mn.value !== '') st.min = +mn.value;
+      if (mx && mx.value !== '') st.max = +mx.value;
+      return st;
+    }
+    function fits(card, st) {
+      var price = +card.getAttribute('data-price');
+      if (st.min !== null && price < st.min) return false;
+      if (st.max !== null && price > st.max) return false;
+      return st.groups.every(function (g) {
+        var tags = (card.getAttribute('data-f-' + g.key) || '').split(' ');
+        return g.values.some(function (v) { return tags.indexOf(v) !== -1; });
+      });
+    }
+    // уходящая карточка догасла (или её прервал новый отбор): прячем и возвращаем в поток
+    var fading = [];
+    function gone(c) {
+      c.getAnimations().forEach(function (a) { a.cancel(); });
+      c.hidden = true;
+      ['position', 'margin', 'pointer-events', 'left', 'top', 'width', 'height'].forEach(function (p) { c.style.removeProperty(p); });
+      fading = fading.filter(function (x) { return x !== c; });
+    }
+    // FLIP: замерили места до, поменяли состав, замерили после — и сдвигаем карточки из старых мест в новые
+    function relayout(show) {
+      fading.slice().forEach(gone);                                                              // прошлый отбор — сразу к концу
+      cards.forEach(function (c) { c.getAnimations().forEach(function (a) { a.finish(); }); });
+      var before = cards.filter(function (c) { return !c.hidden; });
+      var leaving = before.filter(function (c) { return show.indexOf(c) === -1; });
+      var entering = show.filter(function (c) { return c.hidden; });
+      if (reduceMotion || !grid.animate) { cards.forEach(function (c) { c.hidden = show.indexOf(c) === -1; }); return; }
+      var first = before.map(function (c) { return c.getBoundingClientRect(); });
+      var box = grid.getBoundingClientRect();
+      // уходящие — из потока, но на прежнем месте, пока гаснут; остальные уже встают на новые места
+      leaving.forEach(function (c) {
+        var r = first[before.indexOf(c)];
+        c.style.cssText += ';position:absolute;margin:0;pointer-events:none;left:' + (r.left - box.left) + 'px;top:' + (r.top - box.top) + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
+      });
+      entering.forEach(function (c) { c.hidden = false; });
+      before.forEach(function (c, i) {
+        if (leaving.indexOf(c) !== -1) return;
+        var r = c.getBoundingClientRect(), dx = first[i].left - r.left, dy = first[i].top - r.top;
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          c.animate([{ transform: 'translate(' + dx + 'px, ' + dy + 'px)' }, { transform: 'none' }], { duration: 420, easing: FLIP_EASE });
+        }
+      });
+      entering.forEach(function (c) {
+        c.animate([{ opacity: 0, transform: 'scale(0.96)' }, { opacity: 1, transform: 'none' }], { duration: 360, delay: 120, easing: FLIP_EASE, fill: 'backwards' });
+      });
+      leaving.forEach(function (c) {
+        fading.push(c);
+        var a = c.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.96)' }], { duration: 200, easing: 'ease-in', fill: 'forwards' });
+        a.onfinish = function () { if (fading.indexOf(c) !== -1) gone(c); };
+      });
+    }
+    var revealed = false;
+    function apply() {
+      // после первого отбора карточки больше не «проявляются при прокрутке»: их прозрачностью ведает FLIP
+      if (!revealed) { revealed = true; cards.forEach(function (c) { c.classList.remove('reveal'); }); }
+      var st = read(), active = st.groups.length > 0 || st.min !== null || st.max !== null;
+      var show = cards.filter(function (c) { return fits(c, st); }), n = show.length;
+      relayout(show);
+      if (found) found.textContent = active ? 'Найдено ' + n + ' ' + plural(n) : foundText;
+      if (empty) empty.hidden = n > 0;
+      // на планшете и телефоне фильтры — окно, кнопка внизу его закрывает и показывает, сколько нашлось
+      if (showBtn) showBtn.textContent = !active ? showText : n ? 'Показать ' + n + ' ' + plural(n) : 'Нет подходящих ' + forms[2];
+      catalog.dispatchEvent(new CustomEvent('catalog:filter', { bubbles: true, detail: st }));
+    }
+    var typing = null;
+    aside.addEventListener('input', function (e) {
+      if (!e.target.matches('[data-price]')) return;
+      clearTimeout(typing); typing = setTimeout(apply, 400);   // цену применяем, когда перестали печатать
+    });
+    aside.addEventListener('change', function (e) {
+      if (e.target.matches('[data-price]')) clearTimeout(typing);
+      apply();
+    });
+    $$('[data-filters-reset]', catalog).forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('input[type=checkbox]', aside).forEach(function (i) { i.checked = false; });
+        $$('[data-price]', aside).forEach(function (i) { i.value = ''; });
+        aside.dispatchEvent(new Event('change'));   // и счётчик у кнопки «Фильтры», и отбор
+      });
+    });
+  });
 
   /* ---------- Расписание и страница преподавателя: список курсов слева ----------
      Каждый пункт прокручивает к графику своего курса (#c0…, общий обработчик якорей выше);
@@ -908,26 +1078,59 @@
      кнопки видна другая, с data-open, — она открывает окно фильтров */
   $$('[data-filters-toggle]').forEach(function (btn) {
     var catalog = btn.closest('.catalog');
-    btn.addEventListener('click', function () {
-      var open = catalog.classList.toggle('is-filters-open');
+    function apply(open) {
+      catalog.classList.toggle('is-filters-open', open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () {
+      var open = !catalog.classList.contains('is-filters-open');
+      // Колонка выезжает слева, а каждая карточка переезжает на своё новое место — 4 в ряд → 3 и обратно
+      // (заказчик, 30.09). Это View Transitions: у карточек, полосы над ними и шапки на время перехода
+      // свои имена, стили — в pages.css. Без API и при prefers-reduced-motion — сразу, как раньше.
+      if (!document.startViewTransition || reduceMotion) { apply(open); return; }
+      $$('.course-card', catalog).forEach(function (c) { c.getAnimations().forEach(function (a) { a.finish(); }); });
+      var named = [];
+      var vtName = function (el, name) { el.style.viewTransitionName = name; named.push(el); };
+      $$('.catalog__grid > .course-card:not([hidden])', catalog).forEach(function (el, i) { vtName(el, 'catalog-' + i); });
+      // Полоса над курсами и «ничего не нашли» меняют ширину. Одним снимком их растягивало вместе с текстом:
+      // название направления на миг увеличивалось и прыгало вниз-вверх (заказчик, 30.09). Поэтому фон —
+      // своим снимком, а надписи и кнопки — своими, в натуральную величину: только едут (pages.css)
+      [['.catalog__bar', 'catalog-bar'], ['.catalog__bar > h2', 'catalog-bar-title'],
+       ['.catalog__filter-toggle', 'catalog-bar-toggle'], ['.catalog__bar > .t-muted', 'catalog-bar-found']]
+        .forEach(function (p) { var el = $(p[0], catalog); if (el) vtName(el, p[1]); });
+      var empty = $('[data-catalog-empty]:not([hidden])', catalog);
+      if (empty) {
+        vtName(empty, 'catalog-empty');
+        $$(':scope > *', empty).forEach(function (el, i) { vtName(el, 'catalog-empty-' + i); });
+      }
+      catalog.classList.add('is-filters-anim'); doc.classList.add('vt-catalog');
+      var done = function () {
+        catalog.classList.remove('is-filters-anim'); doc.classList.remove('vt-catalog');
+        named.forEach(function (el) { el.style.removeProperty('view-transition-name'); });
+      };
+      document.startViewTransition(function () { apply(open); }).finished.then(done, done);
     });
   });
 
-  /* ---------- Каталог на телефоне: список направлений вместо ряда вкладок ---------- */
-  $$('[data-dir-select]').forEach(function (sel) {
-    var value = $('[data-dir-value]', sel.parentNode);
-    var tabs = $$('.catalog__tabs [role="tab"]');
-    var title = $('.catalog__bar h2');
-    function show(text) { if (value) value.textContent = text; if (title) title.textContent = text; }
-    sel.addEventListener('change', function () {
-      show(sel.value);
-      if (tabs[sel.selectedIndex]) tabs[sel.selectedIndex].click();
+  /* ---------- Направления каталога: теги над курсами, на телефоне — список ----------
+     По умолчанию не выбрано ни одно — показаны все курсы раздела (заказчик, 30.09). Тег выбирает
+     направление, повторное нажатие снимает выбор; название в полосе над курсами и список на телефоне
+     (первый пункт — «все») следуют за ним */
+  $$('.catalog__tabs').forEach(function (list) {
+    var tags = $$('.tab', list), scope = list.parentNode;
+    var sel = $('[data-dir-select]', scope), value = sel && $('[data-dir-value]', sel.parentNode);
+    var title = $('.catalog__bar h2', scope), allTitle = title ? title.textContent : '';
+    function choose(i) { // -1 — все направления
+      tags.forEach(function (t, j) { t.classList.toggle('is-active', j === i); t.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+      if (title) title.textContent = i < 0 ? allTitle : tags[i].textContent;
+      if (sel) { sel.selectedIndex = i + 1; if (value) value.textContent = sel.options[i + 1].text; }
+      // TODO backend: отбор курсов по направлению (direction: null — все)
+      list.dispatchEvent(new CustomEvent('catalog:direction', { bubbles: true, detail: { direction: i < 0 ? null : tags[i].textContent } }));
+    }
+    tags.forEach(function (t, i) {
+      t.addEventListener('click', function () { choose(t.getAttribute('aria-pressed') === 'true' ? -1 : i); });
     });
-    // и наоборот: вкладка на планшете/компьютере меняет выбранное в списке
-    tabs.forEach(function (tab, i) {
-      tab.addEventListener('click', function () { sel.selectedIndex = i; show(sel.value); });
-    });
+    if (sel) sel.addEventListener('change', function () { choose(sel.selectedIndex - 1); });
   });
 
   /* ---------- Sticky CTA на мобильном (после первого экрана) ---------- */
@@ -962,26 +1165,33 @@
 
   /* ---------- Hero-слайдер: листается только сам; прогресс заполняется за интервал ---------- */
   $$('[data-hero-slider]').forEach(function (slider) {
-    var imgs = $$('.hero-slider__img', slider), texts = $$('.hero-slider__text', slider), segs = $$('.hero-progress__seg', slider);
+    var slides = $$('.hero-slider__slide', slider), imgs = $$('.hero-slider__img', slider);
+    var texts = $$('.hero-slider__text', slider), segs = $$('.hero-progress__seg', slider);
     var n = texts.length; if (n < 2) return;
-    var interval = parseInt(slider.getAttribute('data-interval'), 10) || 6000;
+    var interval = parseInt(slider.getAttribute('data-interval'), 10) || 4000;
     slider.style.setProperty('--hero-interval', interval + 'ms');
     var i = 0, timer = null, started = 0, left = interval;
-    imgs.forEach(function (im) { im.loading = 'eager'; });
-    // «Отдаление» картинки (см. .hero-slider__img в components.css): длится интервал + затухание,
-    // чтобы уходящая картинка доезжала, пока гаснет. Web Animations API — движение в композиторе,
-    // перезапуск без сброса стилей и пересчёта раскладки.
-    var FADE = 900, zooms = [];
+    // все картинки грузим и декодируем заранее — иначе на первой смене слайда заминка на декодирование
+    imgs.forEach(function (im) { im.loading = 'eager'; if (im.decode) im.decode().catch(function () {}); });
+    // Пассивное приближение (см. .hero-slider__slide в components.css): картинка растёт CSS-анимацией
+    // hero-zoom (28 с, linear infinite), пока у слайда класс is-zooming. Ставим его при показе — рост идёт
+    // со 100 %; снимаем, когда слайд погас: уходящий растёт, пока гаснет, и в 100 % возвращается невидимым.
+    var FADE = 900, unzooms = [];
     function zoom(k) {
-      var pic = imgs[k];
-      if (!pic || reduceMotion || !pic.animate) return;
-      if (zooms[k]) zooms[k].cancel();      // картинка сейчас невидима — сброс в начало не заметен
-      zooms[k] = pic.animate([{ transform: 'scale(1.07)' }, { transform: 'scale(1)' }],
-        { duration: interval + FADE, easing: 'linear', fill: 'forwards' });
+      var s = slides[k];
+      if (!s || reduceMotion) return;
+      clearTimeout(unzooms[k]);
+      if (s.classList.contains('is-zooming')) { s.classList.remove('is-zooming'); void s.offsetWidth; } // перезапуск
+      s.classList.add('is-zooming');
+    }
+    function unzoom(k) {
+      clearTimeout(unzooms[k]);
+      unzooms[k] = setTimeout(function () { slides[k].classList.remove('is-zooming'); }, FADE + 100);
     }
     function show(k) {
+      slides.forEach(function (s, j) { if (j !== k && s.classList.contains('is-active')) unzoom(j); });
       zoom(k);
-      [imgs, texts, segs].forEach(function (list) { list.forEach(function (el, j) { el.classList.toggle('is-active', j === k); }); });
+      [slides, texts, segs].forEach(function (list) { list.forEach(function (el, j) { el.classList.toggle('is-active', j === k); }); });
       texts.forEach(function (t, j) { if (j === k) t.removeAttribute('aria-hidden'); else t.setAttribute('aria-hidden', 'true'); });
       // перезапуск анимации заполнения
       var bar = segs[k] && segs[k].querySelector('i');
@@ -991,15 +1201,65 @@
     function next() { i = (i + 1) % n; show(i); schedule(interval); }
     function pause() {
       if (!timer) return; clearTimeout(timer); timer = null; left = Math.max(0, left - (Date.now() - started)); slider.classList.add('is-paused');
-      zooms.forEach(function (a) { if (a && a.playState === 'running') a.pause(); });
     }
     function resume() {
       if (timer) return; slider.classList.remove('is-paused'); schedule(left);
-      zooms.forEach(function (a) { if (a && a.playState === 'paused') a.play(); });
     }
     document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); else resume(); });
     if (isStatic) return;
     zoom(0);
+    schedule(interval);
+  });
+
+  /* ---------- Цитаты преподавателей (факультет массажа): листаются сами, как слайдер главной ----------
+     Раз в интервал — следующая цитата, прогресс на фото заполняется за интервал (.hero-progress).
+     Стрелка — сразу к следующей, отсчёт начинается заново. Стоит, только пока блок вне экрана, на скрытой
+     вкладке и при фокусе с клавиатуры. При prefers-reduced-motion и ?static сам не листает — только стрелкой. */
+  $$('[data-quote-slider]').forEach(function (slider) {
+    var pics = $$('.expert__pic', slider), slides = $$('.expert__slide', slider), segs = $$('.hero-progress__seg', slider);
+    var next = $('.expert__next', slider);
+    var n = slides.length; if (n < 2) return;
+    var interval = parseInt(slider.getAttribute('data-interval'), 10) || 8000;
+    slider.style.setProperty('--hero-interval', interval + 'ms');
+    var auto = !reduceMotion && !isStatic;
+    var i = 0, timer = null, started = 0, left = interval, holds = {};
+    function show(k) {
+      [pics, slides, segs].forEach(function (list) { list.forEach(function (el, j) { el.classList.toggle('is-active', j === k); }); });
+      slides.forEach(function (s, j) { if (j === k) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true'); });
+      var bar = segs[k] && segs[k].querySelector('i');
+      if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
+    }
+    function held() { return Object.keys(holds).length > 0; }
+    function schedule(ms) { clearTimeout(timer); timer = null; left = ms; if (!auto || held()) return; started = Date.now(); timer = setTimeout(step, ms); }
+    function step() { i = (i + 1) % n; show(i); schedule(interval); }
+    function hold(why) {
+      if (held()) { holds[why] = true; return; }
+      holds[why] = true;
+      if (timer) { clearTimeout(timer); timer = null; left = Math.max(0, left - (Date.now() - started)); }
+      slider.classList.add('is-paused');
+    }
+    function release(why) {
+      if (!holds[why]) return;
+      delete holds[why];
+      if (held()) return;
+      if (auto) slider.classList.remove('is-paused');
+      schedule(left);
+    }
+    next.addEventListener('click', function () { i = (i + 1) % n; show(i); schedule(interval); });
+    // Листается всегда, как слайдер главной (заказчик, 30.09): под курсором больше не стоит — со стороны это
+    // выглядело как «не листается». Пауза — только при фокусе с клавиатуры (:focus-visible); после нажатия
+    // стрелки мышью кнопка тоже в фокусе, и прежняя пауза на любой фокус останавливала слайдер насовсем.
+    slider.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches(':focus-visible')) hold('focus'); });
+    slider.addEventListener('focusout', function (e) { if (!slider.contains(e.relatedTarget)) release('focus'); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) hold('tab'); else release('tab'); });
+    // блок внизу страницы: пока его не видно, стоит — посетитель застаёт первую цитату, а не случайную
+    if ('IntersectionObserver' in window) {
+      hold('offscreen');
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) release('offscreen'); else hold('offscreen'); });
+      }, { threshold: 0.35 }).observe(slider);
+    }
+    if (!auto) slider.classList.add('is-paused');
     schedule(interval);
   });
 
