@@ -399,11 +399,11 @@
 .course-card__cart-remove, .course-card__cart[aria-pressed="true"] .course-card__cart-add { display: none; }
 .course-card__cart[aria-pressed="true"] .course-card__cart-remove { display: block; }
 @media (hover: hover) { .course-card__cart:hover { background: var(--color-bg-neutral-hover); transform: none; } }
-/* «Подробнее»: при наведении только цвет — раньше стрелка отъезжала (gap 6 → 10 px), ссылка становилась шире и в карточке
-   курса перескакивала на новую строку. В карточке курса ховера у неё нет совсем (заказчик, 30.09). */
+/* «Подробнее» в карточках курсов: при наведении только цвет, текст и стрелка бирюзовые (заказчик, 30.09). Раньше стрелка
+   отъезжала (gap 6 → 10 px), ссылка становилась шире и перескакивала на новую строку — поэтому ховер на время убирали. */
 .more-link { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; font-size: var(--font-body-s); font-weight: var(--fw-medium); transition: color var(--dur-fast); }
 .more-link .icon { width: 16px; height: 16px; }
-@media (hover: hover) { .more-link:hover { color: var(--color-text-accent); } .course-card .more-link:hover { color: inherit; } }
+@media (hover: hover) { .more-link:hover { color: var(--color-text-accent); } }
 
 /* ---------- Direction tile ---------- */
 .dir-tile { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 16px; min-height: 427px; padding: 24px; border-radius: var(--radius-md); overflow: hidden; color: var(--color-text-inverse); isolation: isolate; }
@@ -963,37 +963,36 @@ body.is-locked { overflow: hidden; }
   .schedule-table thead, .schedule-table tbody { display: flex; flex-direction: column; gap: 20px; }
   .schedule-table thead { margin-bottom: 20px; }
   .schedule-table tr { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.25fr); align-items: center; column-gap: 20px; }
-  .schedule-table tbody tr { min-height: 57px; border-radius: 20px; background: var(--color-bg-page); transition: box-shadow var(--dur-fast); }
+  /* Белая подложка строки — слой под ячейками до кнопки (::before), под самой кнопкой белая только левая половина её
+     ячейки. Раньше белой была вся строка со скруглением 20 px, а у кнопки-«таблетки» радиус — половина высоты (29 px):
+     справа из-под кнопки выглядывали белые уголки (заказчик, 30.09). Кнопка во всю высоту строки — и когда текст
+     переносится и строка выше 57 px: правый край кнопки и есть край строки. Скругление строки справа 29 px — для тени. */
+  .schedule-table tbody tr { position: relative; isolation: isolate; min-height: 57px; border-radius: 20px 29px 29px 20px; transition: box-shadow var(--dur-fast); }
   @media (hover: hover) { .schedule-table tbody tr:hover { box-shadow: var(--shadow-card); } }
+  .schedule-table tbody tr::before { content: ""; position: absolute; z-index: -1; grid-row: 1; grid-column: 1 / -2; inset: 0 -21px 0 0; border-radius: 20px 0 0 20px; background: var(--color-bg-page); }
   .schedule-table th, .schedule-table td { display: block; padding: 0 8px; text-align: center !important; background: none !important; border-radius: 0 !important; white-space: normal; }
   .schedule-table th { font-size: var(--font-body-l); line-height: var(--line-body-l); font-weight: var(--fw-regular); color: rgba(24, 25, 26, .84); }
   .schedule-table td { font-size: var(--font-body-m); line-height: var(--line-body-m); font-weight: var(--fw-medium); }
-  .schedule-table td:last-child { padding: 0; }
-  .schedule-table td:last-child .btn { width: 100%; min-height: 57px; }
+  .schedule-table td:last-child { align-self: stretch; padding: 0; background: linear-gradient(90deg, var(--color-bg-page) 50%, transparent 50%) !important; }
+  .schedule-table td:last-child .btn { width: 100%; height: 100%; min-height: 57px; }
   /* График аккредитации: пять колонок данных + кнопка (кит: Accreditation Row).
      Специальность длиннее остальных ячеек, поэтому колонка шире и текст слева. */
   .schedule-table--accred tr { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) repeat(3, minmax(0, 2fr)) minmax(0, 2.2fr); }
   .schedule-table--accred th:first-child, .schedule-table--accred td:first-child { padding-left: 20px; text-align: left !important; }
-  /* Подсветка ближайшей даты — отдельный слой под ячейками 1–4, скруглённый со
-     всех сторон. На самой строке её держать нельзя: она тянулась бы и под кнопку,
-     а обрезать её белой ячейкой — значит получить прямой срез справа. */
-  .schedule-table .is-soon { background: var(--color-bg-page); color: var(--color-text-inverse); }
-  .schedule-table .is-soon::before {
+  /* Подсветка ближайшей даты — отдельный слой под ячейками данных поверх белой подложки, скруглённый со
+     всех сторон. На самой строке её держать нельзя: она тянулась бы и под кнопку, а обрезать её белой
+     ячейкой — значит получить прямой срез справа. Слои позиционированы (absolute) — в раскладку ячеек не входят. */
+  .schedule-table .is-soon { color: var(--color-text-inverse); }
+  .schedule-table .is-soon::after {
     content: "";
+    position: absolute;
+    z-index: -1;
     grid-row: 1;
-    grid-column: 1 / 5;
-    align-self: stretch;
+    grid-column: 1 / -2;
+    inset: 0;
     border-radius: 20px;
     background: linear-gradient(90deg, var(--color-bg-inverse) 0%, #237f86 100%);
   }
-  /* Ячейки кладём в ту же строку поверх слоя: иначе авторазмещение утащит их
-     на вторую строку, обойдя занятые псевдоэлементом колонки. */
-  .schedule-table .is-soon > td { grid-row: 1; position: relative; }
-  .schedule-table .is-soon > td:nth-child(1) { grid-column: 1; }
-  .schedule-table .is-soon > td:nth-child(2) { grid-column: 2; }
-  .schedule-table .is-soon > td:nth-child(3) { grid-column: 3; }
-  .schedule-table .is-soon > td:nth-child(4) { grid-column: 4; }
-  .schedule-table .is-soon > td:nth-child(5) { grid-column: 5; }
 }
 
 /* ---------- Всплывающая форма заявки ---------- */

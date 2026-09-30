@@ -515,7 +515,9 @@ def page(fname, title, desc, body, active="", lds=(), crumbs=None, extra_end="")
   <meta property="og:description" content="{desc}">
   <meta property="og:image" content="{SITE}/assets/img/hero.webp">
   <meta name="theme-color" content="#1c263b">
-  <link rel="icon" href="assets/icons/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="{versioned("assets/icons/favicon.svg")}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{versioned("assets/icons/apple-touch-icon.png")}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
