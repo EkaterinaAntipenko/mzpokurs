@@ -431,6 +431,9 @@
 .course-list a { padding: 18px 24px; border-radius: 16px; background: var(--color-bg-surface); transition: background-color var(--dur-fast), color var(--dur-fast); }
 @media (hover: hover) { .course-list a:hover { background: var(--color-bg-surface-alt); } }
 .course-list a[aria-current] { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
+/* Пока страница сама едет к графику (нажали пункт списка; html.is-anchor-scrolling ставит main.js), пункты,
+   проезжающие под курсором, не подсвечиваются (заказчик, 30.09) */
+@media (hover: hover) { html.is-anchor-scrolling .course-list a:not([aria-current]):hover { background: var(--color-bg-surface); } }
 .sched-course { display: flex; flex-direction: column; gap: 20px; padding: 36px; border-radius: var(--radius-lg); background: var(--color-bg-surface); }
 .sched-course__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
 .sched-course__head .badge { flex: none; }

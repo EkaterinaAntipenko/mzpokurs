@@ -83,9 +83,13 @@
   // Браузерная на длинном пути (до тарифов ~7000 px) разгоняется до ~22 000 px/с и резко встаёт.
   // Здесь длительность растёт с расстоянием (0,5–1,8 с), кривая smootherstep: мягкий разгон
   // и мягкая остановка, пик скорости втрое ниже. Колесо, касание, клавиши — прокрутка отдаётся посетителю.
+  // На время хода у <html> класс is-anchor-scrolling, в начале и в конце — событие anchorscroll (detail.phase:
+  // 'start' | 'end'; в конце detail.reason: 'done' — доехали, 'user' — перебил посетитель, 'replaced' — началась
+  // новая). По нему список курсов в расписании не подсвечивает пункты по пути.
+  function anchorEvent(detail) { document.dispatchEvent(new CustomEvent('anchorscroll', { detail: detail })); }
   var scrollStop = null;
   function scrollToTarget(el) {
-    if (scrollStop) scrollStop();
+    if (scrollStop) scrollStop('replaced');
     var html = document.documentElement;
     // пока идёт своя прокрутка, CSS scroll-behavior: smooth выключен — иначе браузер сглаживает каждый шаг
     html.style.scrollBehavior = 'auto';
@@ -94,11 +98,14 @@
     var dur = Math.min(1800, Math.max(500, 350 + dist * 0.2));
     var t0 = null, frame = 0;
     var stops = ['wheel', 'touchstart', 'keydown', 'mousedown'];
-    var stop = function () {
+    // reason: 'done' / 'replaced'; из слушателей колеса, касания и клавиш приходит событие — это 'user'
+    var stop = function (reason) {
       window.cancelAnimationFrame(frame);
       stops.forEach(function (ev) { window.removeEventListener(ev, stop); });
       html.style.scrollBehavior = '';
+      html.classList.remove('is-anchor-scrolling');
       scrollStop = null;
+      anchorEvent({ phase: 'end', reason: typeof reason === 'string' ? reason : 'user', target: el });
     };
     var step = function (now) {
       if (t0 === null) t0 = now;
@@ -106,10 +113,12 @@
       var k = p * p * p * (p * (p * 6 - 15) + 10);
       window.scrollTo(0, start + (targetY(el) - start) * k);   // цель пересчитывается: на пути могут догрузиться картинки
       if (p < 1) frame = window.requestAnimationFrame(step);
-      else stop();
+      else stop('done');
     };
     stops.forEach(function (ev) { window.addEventListener(ev, stop, { passive: true }); });
     scrollStop = stop;
+    html.classList.add('is-anchor-scrolling');
+    anchorEvent({ phase: 'start', target: el });
     frame = window.requestAnimationFrame(step);
   }
   document.addEventListener('click', function (e) {
@@ -989,8 +998,30 @@
     var targets = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
     function mark(k) { links.forEach(function (a, i) { if (i === k) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); }); }
     links.forEach(function (a, i) { a.addEventListener('click', function () { mark(i); }); });
+    // Пока страница сама едет к графику, пункты по пути не подсвечиваются — выделен тот, по которому нажали
+    // (заказчик, 30.09: подсветка пробегала по всем курсам между прежним и нажатым). Ховер пунктов под курсором
+    // на это время тоже выключен (pages.css, html.is-anchor-scrolling).
+    var lock = false;
+    // график в полосе посередине экрана — та же полоса, что у наблюдателя ниже
+    function inBand() {
+      var h = window.innerHeight;
+      for (var i = 0; i < targets.length; i++) {
+        var r = targets[i] && targets[i].getBoundingClientRect();
+        if (r && r.top < h * 0.5 && r.bottom > h * 0.45) return i;
+      }
+      return -1;
+    }
+    document.addEventListener('anchorscroll', function (e) {
+      lock = e.detail.phase === 'start';
+      // прокрутку перебили колесом или касанием, или ехали не к графику из списка — выделяем тот, что посередине
+      if (e.detail.phase === 'end' && (e.detail.reason === 'user' || targets.indexOf(e.detail.target) < 0)) {
+        var k = inBand();
+        if (k >= 0) mark(k);
+      }
+    });
     if (!('IntersectionObserver' in window)) return;
     var io = new IntersectionObserver(function (entries) {
+      if (lock) return;
       entries.forEach(function (e) { if (e.isIntersecting) mark(targets.indexOf(e.target)); });
     }, { rootMargin: '-45% 0px -50% 0px' });
     targets.forEach(function (t) { if (t) io.observe(t); });
@@ -1321,10 +1352,78 @@
     var prev = $('[data-prev]', wrap), next = $('[data-next]', wrap);
     if (prev) prev.addEventListener('click', function () { go(-1); });
     if (next) next.addEventListener('click', function () { go(1); });
-    // свайп
-    var sx = null;
-    track.addEventListener('pointerdown', function (e) { sx = e.clientX; });
-    track.addEventListener('pointerup', function (e) { if (sx === null) return; var dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); });
+    // Свайп и перетаскивание мышью, как у остальных лент (заказчик, 30.09): лента идёт за пальцем или курсором,
+    // центральная карточка меняется на ходу, после отпускания лента доезжает до ближайшей; короткий жест всё равно
+    // листает на одну в его сторону. Вертикальный жест — прокрутка страницы, его не трогаем. Раньше лента ждала
+    // отпускания, а мышью не листалась совсем: браузер начинал перетаскивать саму ссылку-карточку.
+    function centerX(j, vp) { var el = items[j]; return vp / 2 - (el.offsetLeft + el.offsetWidth / 2); }
+    function center(j) { idx = j; items.forEach(function (el, k) { el.classList.toggle('is-center', k === j); }); }
+    var drag = null, dragged = false;
+    track.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      // x0 — где лента стоит; если она не едет, при перетаскивании точка под курсором остаётся под ним
+      var x0 = currentX(), to = parseFloat((track.style.transform.match(/-?[\d.]+/) || [x0])[0]);
+      drag = { x: e.clientX, y: e.clientY, last: e.clientX, id: e.pointerId, moved: false, start: idx, x0: Math.abs(x0 - to) < 1 ? x0 : null };
+      // отпустить могут и за пределами ленты — ловим на всём окне
+      window.addEventListener('pointerup', endDrag, true);
+      window.addEventListener('pointercancel', endDrag, true);
+    });
+    track.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved) {
+        if (Math.abs(dx) < 6) return;
+        if (Math.abs(dy) > Math.abs(dx)) { endDrag(e); return; }
+        drag.moved = true;
+        try { track.setPointerCapture(e.pointerId); } catch (err) { /* указатель уже отпущен */ }
+        // стояла — идёт за курсором от точки нажатия; ещё доезжала прошлый шаг — с того места, где она сейчас
+        drag.base = drag.x0 !== null ? drag.x0 : currentX() - dx;
+        drag.vp = track.parentElement.getBoundingClientRect().width;
+        track.classList.add('is-dragging');
+      }
+      drag.last = e.clientX;
+      var x = drag.base + dx, best = idx, bd = Infinity;
+      items.forEach(function (el, j) { var d = Math.abs(centerX(j, drag.vp) - x); if (d < bd) { bd = d; best = j; } });
+      // длинный жест: у края запаса клонов — мгновенно на тот же кадр в соседнем наборе
+      if (best < 2 || best > items.length - 3) {
+        var shift = best < 2 ? n : -n, dw = (shift / n) * (items[n].offsetLeft - items[0].offsetLeft);
+        track.classList.add('no-anim');
+        drag.base -= dw; x -= dw; best += shift; drag.start += shift;
+        center(best);
+        track.style.transform = 'translateX(' + x + 'px)';
+        void track.offsetWidth;
+        track.classList.remove('no-anim');
+        return;
+      }
+      if (best !== idx) center(best);
+      track.style.transform = 'translateX(' + x + 'px)';
+    });
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var d = drag; drag = null;
+      window.removeEventListener('pointerup', endDrag, true);
+      window.removeEventListener('pointercancel', endDrag, true);
+      if (!d.moved) return;
+      track.classList.remove('is-dragging');
+      dragged = true;
+      window.setTimeout(function () { dragged = false; }, 0);
+      var dx = (e.type === 'pointercancel' ? d.last : e.clientX) - d.x, to = idx;
+      if (to === d.start && Math.abs(dx) > 40) to += dx < 0 ? 1 : -1;
+      goTo(to);
+    }
+    // после перетаскивания отпускание кнопки над карточкой не должно её открывать
+    track.addEventListener('click', function (e) { if (dragged) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+    track.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    // горизонтальный жест тачпада — один шаг на жест
+    var wheelLock = 0;
+    track.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 4) return;
+      e.preventDefault();
+      var now = Date.now();
+      if (now < wheelLock) return;
+      wheelLock = now + 600;
+      go(e.deltaX > 0 ? 1 : -1);
+    }, { passive: false });
     track.addEventListener('click', function (e) { var card = e.target.closest('.teacher'); if (card && !card.classList.contains('is-center')) { e.preventDefault(); goTo(items.indexOf(card)); } });
     window.addEventListener('resize', function () { render(false); });
     window.addEventListener('load', function () { render(false); });
